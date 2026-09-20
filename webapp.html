@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>K-Cleaner — 제주 스마트 신고</title>
+<style>
+  :root{
+    --tint:#2563eb; --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ec;
+    --text:#1b2230; --sub:#6b7280; --danger:#dc2626; --ok:#16a34a; --warn:#b45309;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--tint);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+  header .title{font-weight:700;font-size:16px;}
+  header .sub{font-size:11px;opacity:.85;}
+  main{max-width:480px;margin:0 auto;padding:14px;padding-bottom:100px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
+  .user-row{display:flex;align-items:center;gap:10px;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:#dbe3ee;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .user-name{font-weight:600;font-size:15px;}
+  .user-meta{font-size:12px;color:var(--sub);margin-top:2px;}
+  .badge{font-size:11px;padding:1px 6px;border-radius:6px;background:#eaf2ff;color:var(--tint);margin-left:4px;}
+  .badge.guest{background:#f2f2f2;color:var(--sub);}
+  label.field-label{display:block;font-size:13px;font-weight:600;margin:4px 0 8px;}
+  .req{color:var(--danger);}
+  .photo-drop{border:1.5px dashed #c7cfda;border-radius:10px;padding:26px 10px;text-align:center;cursor:pointer;position:relative;background:#fafbfd;}
+  .photo-drop img{max-width:100%;max-height:220px;border-radius:8px;}
+  .photo-drop .hint{font-size:12px;color:var(--sub);margin-top:6px;}
+  input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .loc-box{margin-top:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;display:flex;gap:6px;align-items:flex-start;}
+  .loc-box.ok{background:#eefaf0;color:var(--ok);}
+  .loc-box.pending{background:#fff8e6;color:var(--warn);}
+  .loc-box.err{background:#fdeeee;color:var(--danger);}
+  select, textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);}
+  textarea{resize:vertical;min-height:70px;}
+  .footer-btn{position:fixed;left:0;right:0;bottom:0;padding:12px 14px;background:linear-gradient(to top, var(--bg) 60%, transparent);}
+  .submit-btn{max-width:452px;margin:0 auto;display:flex;width:100%;justify-content:center;align-items:center;gap:8px;background:var(--tint);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;}
+  .submit-btn:disabled{opacity:.55;cursor:default;}
+  .analysis-box{margin-top:12px;font-size:13px;white-space:pre-wrap;background:#f7f9fc;border-radius:8px;padding:10px;border:1px solid var(--border);}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .small-note{font-size:11.5px;color:var(--sub);margin-top:6px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">🌊 K-Cleaner</div>
+    <div class="sub">제주 스마트 신고</div>
+  </div>
+  <div class="sub" id="hdr-status">연결 중…</div>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="user-row">
+      <div class="avatar">👤</div>
+      <div>
+        <div class="user-name" id="user-name">확인 중…</div>
+        <div class="user-meta" id="user-phone">&nbsp;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="field-label">사진 첨부 <span class="req">*</span></label>
+    <div class="photo-drop" id="photo-drop">
+      <input type="file" id="photo-input" accept="image/*" capture="environment">
+      <div id="photo-placeholder">
+        <div style="font-size:28px;">📷</div>
+        <div>사진을 첨부하세요</div>
+        <div class="hint">탭하여 카메라 또는 갤러리 선택</div>
+      </div>
+      <img id="photo-preview" style="display:none;">
+    </div>
+
+    <div class="loc-box pending" id="loc-box">
+      <span>📍</span><span id="loc-text">위치 확인 중…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="field-label">신고 유형 <span class="req">*</span></label>
+    <select id="report-type">
+      <option value="">유형 선택</option>
+      <option value="MAR-PLA">해양 쓰레기 (플라스틱·비닐·스티로폼)</option>
+      <option value="MAR-NET">폐어구·폐그물</option>
+      <option value="MAR-OIL">기름·화학물질 유출</option>
+      <option value="LND-ILL">불법 투기</option>
+      <option value="LND-RVR">하천·수질 오염</option>
+      <option value="AIR-BRN">불법 소각</option>
+      <option value="ETC">기타</option>
+    </select>
+
+    <label class="field-label" style="margin-top:14px;">상황 설명 (선택)</label>
+    <textarea id="desc" placeholder="AI가 사진으로 자동 분석하지만, 추가 정보를 입력하면 더 정확합니다.&#10;예) '오후 2시쯤 발생', '냄새가 심함', '이미 신고한 적 있음'"></textarea>
+
+    <div id="analysis-result" class="analysis-box" style="display:none;"></div>
+  </div>
+
+</main>
+
+<div class="footer-btn">
+  <button class="submit-btn" id="submit-btn">
+    <span id="submit-icon">🤖</span><span id="submit-label">AI 분석 후 신고 접수</span>
+  </button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ── 프록시(혼디 공용 백엔드) — 이 값 하나만으로 GWP 규약(token/facts)을
+  // 소비하고, 신고 확정 시 다시 opener(혼디 메인 탭)에 GWP_* postMessage로
+  // 보고한다. fiil.kr 시절엔 이 파일이 독립 배포되어 있어 hondi.net의
+  // 프로필/위치/공용 LLM 프록시를 전혀 쓰지 않았다 — clean.hondi.net 이전과
+  // 함께 아래 두 가지를 바로잡는다:
+  //   1) 사용자 정보: token(GUID)으로 실제 프로필을 조회한다 (더미 "김제주" 제거)
+  //   2) 위치 정보: 새로 GPS를 요청하기 전에, 혼디 AI 비서가 이미 넘겨준
+  //      facts.currentLocation(및 사진 EXIF GPS)을 우선 사용한다.
+  const PROXY = 'https://hondi-proxy.tensor-city.workers.dev';
+
+  const qs = new URLSearchParams(location.search);
+  const TOKEN   = qs.get('token')   || '';   // 사용자 GUID(익명 식별자) — _gwpLaunch()가 전달
+  const ORIGIN  = qs.get('origin')  || '';   // 이 탭을 연 hondi.net 오리진(postMessage 대상)
+  const CTX_B64 = qs.get('ctx')     || '';   // 사용자가 원래 하려던 발화(있으면)
+  const FACTS_B64 = qs.get('facts') || '';   // 혼디가 이미 계산해둔 부가정보(currentLocation 등)
+
+  function b64uDecodeUtf8(b64) {
+    try { return decodeURIComponent(escape(atob(b64))); } catch (e) { return ''; }
+  }
+
+  const ctxText = CTX_B64 ? b64uDecodeUtf8(CTX_B64) : '';
+  let facts = {};
+  if (FACTS_B64) {
+    try { facts = JSON.parse(b64uDecodeUtf8(FACTS_B64)) || {}; }
+    catch (e) { console.warn('[K-Cleaner] facts 파싱 실패:', e.message); }
+  }
+  if (ctxText) {
+    const descEl = document.getElementById('desc');
+    if (descEl && !descEl.value) descEl.value = ctxText;
+  }
+
+  // ── opener(혼디 메인 탭)에 GWP 프로토콜 메시지 전송 ──────────────
+  function postToOpener(msg) {
+    if (!window.opener || !ORIGIN) return;
+    try { window.opener.postMessage(Object.assign({ type: 'GWP_MESSAGE' }, msg), ORIGIN); }
+    catch (e) { console.warn('[K-Cleaner] postMessage 실패:', e.message); }
+  }
+  function postDone(payload) {
+    if (!window.opener || !ORIGIN) return;
+    try { window.opener.postMessage(Object.assign({ type: 'GWP_DONE' }, payload), ORIGIN); }
+    catch (e) { console.warn('[K-Cleaner] GWP_DONE 전송 실패:', e.message); }
+  }
+
+  document.getElementById('hdr-status').textContent = ORIGIN ? '혼디 연결됨' : '독립 접속';
+
+  // ══════════════════════════════════════════════════════════════
+  // 1) 사용자 정보 — token(GUID)으로 실제 프로필 조회
+  //    (기존 fiil.kr 화면의 "김제주(자동입력)" 더미 데이터를 대체)
+  // ══════════════════════════════════════════════════════════════
+  const userNameEl  = document.getElementById('user-name');
+  const userPhoneEl = document.getElementById('user-phone');
+
+  function maskPhone(phone) {
+    if (!phone) return null;
+    const digits = phone.replace(/[^0-9]/g, '');
+    if (digits.length < 7) return phone;
+    return digits.slice(0, 3) + '-****-' + digits.slice(-4);
+  }
+
+  async function loadRealProfile() {
+    if (!TOKEN) {
+      userNameEl.textContent = '게스트';
+      userNameEl.innerHTML += ' <span class="badge guest">비로그인</span>';
+      userPhoneEl.textContent = '신고 접수 후 별도 연락처를 남겨주세요';
+      return;
+    }
+    userNameEl.textContent = '조회 중…';
+    try {
+      const res = await fetch(`${PROXY}/profile?guid=${encodeURIComponent(TOKEN)}`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const p = data && data.profile;
+      if (p && p.name) {
+        userNameEl.textContent = p.name;
+        userNameEl.innerHTML += ' <span class="badge">인증</span>';
+        const masked = maskPhone(p.phone);
+        userPhoneEl.textContent = masked ? masked : (p.address || '연락처 비공개');
+      } else {
+        // 프로필은 있지만 이름이 비공개이거나 아직 없음 — 더미로 채우지 않는다.
+        userNameEl.textContent = '혼디 사용자';
+        userNameEl.innerHTML += ' <span class="badge">인증</span>';
+        userPhoneEl.textContent = p && p.address ? p.address : '연락처 비공개';
+      }
+    } catch (e) {
+      console.warn('[K-Cleaner] 프로필 조회 실패:', e.message);
+      userNameEl.textContent = '혼디 사용자';
+      userNameEl.innerHTML += ' <span class="badge guest">확인 필요</span>';
+      userPhoneEl.textContent = '프로필을 불러오지 못했습니다';
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // 2) 위치 정보 — 새로 GPS를 요청하기 전에 이미 확보된 값부터 사용
+  //    우선순위: ① 첨부 사진의 EXIF GPS(현장 좌표, 가장 정확)
+  //             ② 혼디 AI 비서가 넘겨준 facts.currentLocation
+  //             ③ 이 페이지 자체의 브라우저 GPS(위 둘 다 없을 때만, 타임아웃 명확화)
+  // ══════════════════════════════════════════════════════════════
+  const locBox  = document.getElementById('loc-box');
+  const locText = document.getElementById('loc-text');
+  let resolvedLocation = null; // { lat, lng, address, source }
+
+  function setLocUI(state, text) {
+    locBox.className = 'loc-box ' + state;
+    locText.textContent = text;
+  }
+
+  function applyLocation(loc, sourceLabel) {
+    resolvedLocation = loc;
+    const addr = loc.address ? ` (${loc.address})` : '';
+    const coord = (loc.lat != null && loc.lng != null) ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}` : '';
+    setLocUI('ok', `${sourceLabel}: ${coord}${addr}`.trim());
+  }
+
+  // ② facts.currentLocation 우선 반영 — 문자열(주소) 또는 "lat,lng" 형태
+  (function useFactsLocationIfAny() {
+    if (!facts || !facts.currentLocation) return;
+    const cl = String(facts.currentLocation);
+    const m = cl.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+    if (m) {
+      applyLocation({ lat: parseFloat(m[1]), lng: parseFloat(m[2]), address: null }, '혼디 비서 제공 위치');
+    } else {
+      applyLocation({ lat: null, lng: null, address: cl }, '혼디 비서 제공 위치');
+    }
+  })();
+
+  // ③ 브라우저 GPS — facts에서 위치를 못 얻었을 때만, 타임아웃을 짧고
+  //    명확하게 두고 실패 시 "다시 시도" 버튼을 보여준다(과거 fiil.kr처럼
+  //    "GPS 시간 초과. 다시 시도합니다."를 무한 반복하지 않는다).
+  function tryBrowserGeolocation() {
+    if (resolvedLocation) return; // 이미 위치가 있으면 새로 요청하지 않음
+    if (!navigator.geolocation) {
+      setLocUI('err', '이 브라우저는 위치 확인을 지원하지 않습니다. 주소를 직접 입력해주세요.');
+      return;
+    }
+    setLocUI('pending', '이 기기의 GPS로 위치 확인 중…');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        applyLocation({
+          lat: pos.coords.latitude, lng: pos.coords.longitude, address: null,
+        }, '기기 GPS');
+      },
+      (err) => {
+        if (resolvedLocation) return; // EXIF 등 다른 경로가 그 사이 먼저 채웠으면 무시
+        setLocUI('err', 'GPS 확인 실패(' + (err.code === err.PERMISSION_DENIED ? '권한 거부' : '시간 초과') + '). 사진의 위치정보를 사용하거나, 상황 설명에 주소를 적어주세요.');
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }
+
+  if (!resolvedLocation) {
+    // facts로도 못 채웠으면, 사진에서 EXIF를 먼저 시도해볼 여지를 1초 주고
+    // (사용자가 바로 사진을 첨부하는 경우가 많음) 그래도 없으면 기기 GPS로.
+    setTimeout(() => { if (!resolvedLocation) tryBrowserGeolocation(); }, 1000);
+  }
+
+  // ── 사진 EXIF GPS 추출(순수 JS, 외부 라이브러리 불필요) ─────────
+  // 현장 사진 자체의 GPS가 있으면 "대리 신고" 여부와 무관하게 가장
+  // 신뢰도 높은 신고 위치이므로 최우선으로 덮어쓴다.
+  function extractExifGps(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const buf = e.target.result;
+          const view = new DataView(buf);
+          if (view.getUint16(0) !== 0xFFD8) return resolve(null);
+          let offset = 2;
+          while (offset < buf.byteLength - 2) {
+            const marker = view.getUint16(offset); offset += 2;
+            if (marker === 0xFFE1) {
+              const exifHeader = String.fromCharCode(
+                view.getUint8(offset + 2), view.getUint8(offset + 3),
+                view.getUint8(offset + 4), view.getUint8(offset + 5));
+              if (exifHeader !== 'Exif') return resolve(null);
+              const tiffStart = offset + 8;
+              const little = view.getUint16(tiffStart) === 0x4949;
+              const gU = (o, s = 2) => s === 4
+                ? (little ? view.getUint32(tiffStart + o, true) : view.getUint32(tiffStart + o, false))
+                : (little ? view.getUint16(tiffStart + o, true) : view.getUint16(tiffStart + o, false));
+              const ifd0 = gU(4, 4);
+              const entries = gU(ifd0);
+              let gpsPtr = null;
+              for (let i = 0; i < entries; i++) {
+                const e0 = ifd0 + 2 + i * 12;
+                if (gU(e0) === 0x8825) gpsPtr = gU(e0 + 8, 4);
+              }
+              if (!gpsPtr) return resolve(null);
+              const readRat = (o) => {
+                const num = view.getUint32(tiffStart + o, little);
+                const den = view.getUint32(tiffStart + o + 4, little);
+                return den ? num / den : 0;
+              };
+              const toDD = (o) => readRat(o) + readRat(o + 8) / 60 + readRat(o + 16) / 3600;
+              const gEntries = gU(gpsPtr);
+              const g = {};
+              for (let i = 0; i < gEntries; i++) {
+                const ge = gpsPtr + 2 + i * 12;
+                const tag = gU(ge);
+                if ([1, 2, 3, 4].includes(tag)) g[tag] = gU(ge + 8, 4);
+              }
+              if (g[2] == null || g[4] == null) return resolve(null);
+              let lat = toDD(g[2]), lng = toDD(g[4]);
+              const latRef = view.getUint8(tiffStart + (g[1] || 0));
+              const lngRef = view.getUint8(tiffStart + (g[3] || 0));
+              if (latRef === 83) lat = -lat;   // 'S'
+              if (lngRef === 87) lng = -lng;   // 'W'
+              return resolve({ lat, lng });
+            }
+            if ((marker & 0xFF00) !== 0xFF00) break;
+            offset += view.getUint16(offset);
+          }
+          resolve(null);
+        } catch (err) { resolve(null); }
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // 사진 첨부 UI
+  // ══════════════════════════════════════════════════════════════
+  const photoInput = document.getElementById('photo-input');
+  const photoPreview = document.getElementById('photo-preview');
+  const photoPlaceholder = document.getElementById('photo-placeholder');
+  let attachedFile = null;
+
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files && photoInput.files[0];
+    if (!file) return;
+    attachedFile = file;
+    const url = URL.createObjectURL(file);
+    photoPreview.src = url;
+    photoPreview.style.display = 'block';
+    photoPlaceholder.style.display = 'none';
+
+    // EXIF GPS가 있으면 최우선으로 위치를 교체(현장 좌표가 가장 정확)
+    const exif = await extractExifGps(file);
+    if (exif && exif.lat != null) {
+      applyLocation({ lat: exif.lat, lng: exif.lng, address: null }, '사진 GPS(EXIF)');
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // 3) AI 분석 — 혼디 공용 LLM 프록시(/deepseek, deepseek-chat vision)를
+  //    사용한다. 기존 fiil.kr처럼 이 화면 자체에 별도 LLM API 키를
+  //    설정해야 하는 요구사항을 없앤다 — 다른 K-서비스와 동일하게
+  //    혼디 플랫폼의 공용 백엔드를 그대로 쓴다.
+  // ══════════════════════════════════════════════════════════════
+  const SP14_IMG_SYSTEM = `당신은 환경 현장 사진을 분석하는 객관적 데이터 추출 전문가다(SP-14-IMG).
+사진에서 보이는 사실만 수치로 추출한다. 판단·해석·견적·보고서 작성은 하지 않는다.
+결과는 반드시 아래 JSON 형식으로만 출력한다. JSON 외 어떠한 텍스트도 출력하지 않는다.
+8대 성분: ST=스티로폼 PL=경질플라스틱 VI=비닐 GL=유리병 ME=금속캔 NT=폐어구 WD=목재 EX=기타
+(ratio_pct 합계 반드시 100. 보이지 않는 성분은 0/false)
+규모: XS(<50kg) S(50~200kg) M(200~400kg) L(400~1000kg) XL(1000kg+)
+지형: SAND|ROCK|CLIFF|WATER|FOREST|UNKNOWN
+위험도: S0(일반) S1(대량) S2(오염위험) S3(유해물질)
+출력 JSON 스키마: {"confidence":0.0,"image_quality":"GOOD|FAIR|POOR","scale":"XS|S|M|L|XL","terrain":"...","risk_level":"S0|S1|S2|S3","total_weight_kg_est":0,"components":{"ST":{"ratio_pct":0,"weight_kg_est":0},"PL":{...},"VI":{...},"GL":{...},"ME":{...},"NT":{...},"WD":{...},"EX":{...}},"scene_description":""}`;
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function analyzeImage(file, userText) {
+    const dataUrl = await fileToDataUrl(file);
+    const body = {
+      model: 'deepseek-chat', // VISION_MODELS에 등록된 유일한 DeepSeek 비전 모델
+      guid: TOKEN || 'anonymous',
+      messages: [
+        { role: 'system', content: SP14_IMG_SYSTEM },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userText ? `상황 설명: ${userText}` : '사진을 분석해 JSON으로만 응답하라.' },
+            { type: 'image_url', image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 700,
+    };
+    const res = await fetch(`${PROXY}/deepseek`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!res.ok) throw new Error('분석 서버 오류 (HTTP ' + res.status + ')');
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || data?.content || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // 제출
+  // ══════════════════════════════════════════════════════════════
+  const submitBtn = document.getElementById('submit-btn');
+  const submitIcon = document.getElementById('submit-icon');
+  const submitLabel = document.getElementById('submit-label');
+  const resultBox = document.getElementById('analysis-result');
+
+  function setSubmitting(on, label) {
+    submitBtn.disabled = on;
+    submitIcon.innerHTML = on ? '<span class="spinner"></span>' : '🤖';
+    submitLabel.textContent = label || 'AI 분석 후 신고 접수';
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const reportType = document.getElementById('report-type').value;
+    const desc = document.getElementById('desc').value.trim();
+
+    if (!attachedFile) { alert('사진을 먼저 첨부해주세요.'); return; }
+    if (!reportType)   { alert('신고 유형을 선택해주세요.'); return; }
+
+    setSubmitting(true, 'AI 분석 중…');
+    resultBox.style.display = 'none';
+
+    let analysis = null;
+    try {
+      analysis = await analyzeImage(attachedFile, desc);
+    } catch (e) {
+      console.warn('[K-Cleaner] 분석 실패:', e.message);
+      setSubmitting(false);
+      alert('사진 분석에 실패했습니다(' + e.message + '). 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    const locSummary = resolvedLocation
+      ? (resolvedLocation.address || `${resolvedLocation.lat?.toFixed(5)}, ${resolvedLocation.lng?.toFixed(5)}`)
+      : '위치 미확인';
+
+    resultBox.style.display = 'block';
+    resultBox.textContent =
+      `분석 신뢰도: ${Math.round((analysis.confidence || 0) * 100)}%\n` +
+      `규모: ${analysis.scale || '?'} / 지형: ${analysis.terrain || '?'} / 위험도: ${analysis.risk_level || '?'}\n` +
+      `추정 중량: ${analysis.total_weight_kg_est ?? '?'}kg\n` +
+      `현장 설명: ${analysis.scene_description || '-'}\n` +
+      `위치: ${locSummary}`;
+
+    setSubmitting(true, '신고 접수 중…');
+
+    const summary = `[${reportType}] ${analysis.scale || ''} 규모 환경 신고 접수 — ${locSummary}`;
+
+    // 대화창 쪽에도 결과를 알리고(GWP_MESSAGE), 접수 완료를 보고한다(GWP_DONE)
+    postToOpener({ role: 'ai', text: summary });
+    postDone({
+      summary,
+      reporter_svc: 'fiil-kcleaner',
+      pdvData: {
+        who: null, when: new Date().toISOString(), where: locSummary,
+        what: summary, how: 'clean_hondi_net_webapp', why: desc || null,
+      },
+    });
+
+    setSubmitting(false, '접수 완료 ✅');
+    setTimeout(() => setSubmitting(false), 1800);
+  });
+
+  loadRealProfile();
+})();
+</script>
+</body>
+</html>
