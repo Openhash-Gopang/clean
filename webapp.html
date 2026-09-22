@@ -1,484 +1,2303 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
+    <script src="/gopang-wallet.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>K-Cleaner — 제주 스마트 신고</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FIIL — 제주 스마트 신고</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --tint:#2563eb; --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ec;
-    --text:#1b2230; --sub:#6b7280; --danger:#dc2626; --ok:#16a34a; --warn:#b45309;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;background:var(--bg);color:var(--text);}
-  header{background:var(--tint);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
-  header .title{font-weight:700;font-size:16px;}
-  header .sub{font-size:11px;opacity:.85;}
-  main{max-width:480px;margin:0 auto;padding:14px;padding-bottom:100px;}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
-  .user-row{display:flex;align-items:center;gap:10px;}
-  .avatar{width:38px;height:38px;border-radius:50%;background:#dbe3ee;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-  .user-name{font-weight:600;font-size:15px;}
-  .user-meta{font-size:12px;color:var(--sub);margin-top:2px;}
-  .badge{font-size:11px;padding:1px 6px;border-radius:6px;background:#eaf2ff;color:var(--tint);margin-left:4px;}
-  .badge.guest{background:#f2f2f2;color:var(--sub);}
-  label.field-label{display:block;font-size:13px;font-weight:600;margin:4px 0 8px;}
-  .req{color:var(--danger);}
-  .photo-drop{border:1.5px dashed #c7cfda;border-radius:10px;padding:26px 10px;text-align:center;cursor:pointer;position:relative;background:#fafbfd;}
-  .photo-drop img{max-width:100%;max-height:220px;border-radius:8px;}
-  .photo-drop .hint{font-size:12px;color:var(--sub);margin-top:6px;}
-  input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-  .loc-box{margin-top:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;display:flex;gap:6px;align-items:flex-start;}
-  .loc-box.ok{background:#eefaf0;color:var(--ok);}
-  .loc-box.pending{background:#fff8e6;color:var(--warn);}
-  .loc-box.err{background:#fdeeee;color:var(--danger);}
-  select, textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);}
-  textarea{resize:vertical;min-height:70px;}
-  .footer-btn{position:fixed;left:0;right:0;bottom:0;padding:12px 14px;background:linear-gradient(to top, var(--bg) 60%, transparent);}
-  .submit-btn{max-width:452px;margin:0 auto;display:flex;width:100%;justify-content:center;align-items:center;gap:8px;background:var(--tint);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;}
-  .submit-btn:disabled{opacity:.55;cursor:default;}
-  .analysis-box{margin-top:12px;font-size:13px;white-space:pre-wrap;background:#f7f9fc;border-radius:8px;padding:10px;border:1px solid var(--border);}
-  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .small-note{font-size:11.5px;color:var(--sub);margin-top:6px;}
+:root {
+  --primary: #00529B;
+  --primary-dark: #003A6E;
+  --primary-light: #E8F0FB;
+  --accent: #0EA47A;
+  --accent-light: #E0F5EF;
+  --warn: #D64F0A;
+  --warn-light: #FFF0E8;
+  --text: #1A1A1A;
+  --muted: #767676;
+  --border: #E0E0E0;
+  --bg: #F5F7FA;
+  --white: #fff;
+  --radius: 14px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'Noto Sans KR', sans-serif; }
+
+/* ── APP SHELL ── */
+#app {
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+  background: var(--bg);
+  overflow-y: auto;
+  padding-bottom: 72px; /* bottom-nav 높이만큼 여백 */
+}
+.screen.hidden { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.screen.slide-out { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--white);
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.topbar-logo {
+  width: 32px; height: 32px;
+  background: var(--primary);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900; color: #fff;
+  letter-spacing: -1px;
+}
+.topbar-info { flex: 1; }
+.topbar-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.topbar-sub { font-size: 11px; color: var(--muted); }
+.topbar-back {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--text);
+}
+
+/* ── HOME SCREEN ── */
+.home-banner {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  padding: 28px 20px 32px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.home-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; right: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.home-banner-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px; font-weight: 600;
+  margin-bottom: 10px;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  background: #4CAF50;
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.home-banner h2 { font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+.home-banner p { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.6; }
+
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+.home-stat {
+  text-align: center;
+  padding: 14px 8px;
+  border-right: 1px solid var(--border);
+}
+.home-stat:last-child { border-right: none; }
+.home-stat-val { font-size: 20px; font-weight: 700; color: var(--primary); display: block; }
+.home-stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.section-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 18px 20px 8px;
+}
+
+/* ── BIG REPORT BUTTON ── */
+.report-cta {
+  margin: 0 16px 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, #0B8A65 100%);
+  border: none;
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  width: calc(100% - 32px);
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(14,164,122,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.report-cta:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(14,164,122,0.2); }
+.report-cta-icon {
+  width: 52px; height: 52px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.report-cta-text { color: #fff; }
+.report-cta-title { font-size: 17px; font-weight: 700; display: block; margin-bottom: 3px; }
+.report-cta-sub { font-size: 12px; opacity: 0.85; }
+
+/* ── QUICK SCENARIO BUTTONS ── */
+.scenario-grid-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+.scenario-btn {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.scenario-btn:active { transform: scale(0.97); background: var(--primary-light); border-color: var(--primary); }
+.scenario-btn-icon { font-size: 24px; display: block; margin-bottom: 8px; }
+.scenario-btn-title { font-size: 13px; font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+.scenario-btn-tag { font-size: 10px; color: var(--muted); }
+
+/* ── RECENT REPORTS ── */
+.recent-list { padding: 0 16px 100px; }
+.recent-item {
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.recent-photo {
+  width: 48px; height: 48px;
+  border-radius: 8px;
+  background: var(--bg);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  overflow: hidden;
+}
+.recent-photo img { width: 100%; height: 100%; object-fit: cover; }
+.recent-info { flex: 1; min-width: 0; }
+.recent-title { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-loc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.recent-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.badge-done { background: var(--accent-light); color: var(--accent); }
+.badge-active { background: #FEF3C7; color: #92400E; }
+.badge-new { background: var(--primary-light); color: var(--primary); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 72px;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding-bottom: 8px;
+  transition: color 0.15s;
+  color: var(--muted);
+}
+.nav-item.active { color: var(--primary); }
+.nav-item-icon { font-size: 22px; line-height: 1; }
+.nav-item-label { font-size: 10px; font-weight: 500; }
+
+/* ── REPORT SCREEN ── */
+.report-scroll { padding: 16px 16px 120px; }
+
+.upload-zone {
+  background: var(--white);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.upload-zone.has-image { border-style: solid; border-color: var(--primary); }
+.upload-zone:active { background: var(--primary-light); }
+.upload-zone-icon { font-size: 42px; }
+.upload-zone-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.upload-zone-sub { font-size: 12px; color: var(--muted); }
+.upload-preview {
+  position: absolute; inset: 0;
+  object-fit: cover;
+  width: 100%; height: 100%;
+}
+.upload-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+}
+.upload-overlay-btn {
+  background: rgba(255,255,255,0.9);
+  border: none; border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+#photoInput { display: none; }
+
+.gps-bar {
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.gps-bar-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  font-weight: 400;
+  flex: 1;
+}
+.gps-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: block; }
+.form-label span { color: var(--warn); }
+.form-select, .form-textarea, .form-input {
+  width: 100%;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+.form-select:focus, .form-textarea:focus, .form-input:focus { border-color: var(--primary); }
+.form-textarea { min-height: 80px; resize: none; line-height: 1.6; }
+.form-select-wrap { position: relative; }
+.form-select-wrap::after {
+  content: '▾';
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+}
+
+.sender-info-box {
+  background: var(--primary-light);
+  border: 1px solid #C5D8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sender-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff;
+  flex-shrink: 0;
+}
+.sender-details { font-size: 12px; color: var(--text); }
+.sender-name { font-weight: 700; display: block; }
+.sender-phone { color: var(--muted); }
+
+.submit-btn {
+  width: 100%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 17px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.submit-btn:active { transform: scale(0.98); background: var(--primary-dark); }
+.submit-btn:disabled { background: #B0B0B0; cursor: not-allowed; }
+
+/* ── AI ANALYSIS SCREEN ── */
+.analysis-screen { background: var(--white); }
+.analysis-header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  padding: 28px 20px;
+  color: #fff;
+}
+.analysis-header h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.analysis-header p { font-size: 12px; opacity: 0.8; }
+.analysis-photo-strip {
+  display: flex;
+  gap: 0;
+}
+.analysis-photo {
+  flex: 1;
+  height: 140px;
+  background: #1A1A2E;
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.analysis-photo img { width: 100%; height: 100%; object-fit: cover; }
+.analysis-photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,82,155,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.analysis-photo-label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 6px;
+}
+
+.ai-thinking {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s;
+}
+.ai-step-item.visible { opacity: 1; transform: translateY(0); }
+.ai-step-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  background: var(--border);
+  color: var(--muted);
+}
+.ai-step-dot.active { background: var(--primary); color: #fff; }
+.ai-step-dot.done { background: var(--accent); color: #fff; }
+.ai-step-text { font-size: 12px; color: var(--text); flex: 1; }
+.ai-step-text strong { color: var(--primary); font-weight: 700; }
+.ai-step-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── RESULT SCREEN ── */
+.result-header {
+  background: var(--accent);
+  padding: 32px 20px 28px;
+  text-align: center;
+  color: #fff;
+}
+.result-check {
+  width: 64px; height: 64px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 14px;
+  animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+.result-header h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.result-header p { font-size: 12px; opacity: 0.9; }
+.result-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+.result-body { padding: 20px; padding-bottom: 100px; }
+
+.result-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.result-card-title {
+  background: var(--bg);
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.result-row {
+  display: flex;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.result-row:last-child { border-bottom: none; }
+.result-key { color: var(--muted); width: 90px; flex-shrink: 0; }
+.result-val { color: var(--text); font-weight: 500; flex: 1; }
+
+.ai-analysis-box {
+  background: var(--primary-dark);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.ai-analysis-box-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7DD3B0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.ai-analysis-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.85);
+}
+
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.action-num {
+  width: 24px; height: 24px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.action-text { color: var(--text); }
+
+.result-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.btn-outline {
+  width: 100%;
+  border: 1.5px solid var(--primary);
+  background: none;
+  color: var(--primary);
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+}
+
+/* ── MY PAGE ── */
+.mypage-header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  padding: 32px 20px 24px;
+  color: #fff;
+  text-align: center;
+}
+.mypage-avatar {
+  width: 72px; height: 72px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 12px;
+}
+.mypage-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+.mypage-phone { font-size: 12px; opacity: 0.75; }
+.mypage-score {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.mypage-score-item { text-align: center; }
+.mypage-score-val { font-size: 22px; font-weight: 700; display: block; }
+.mypage-score-label { font-size: 10px; opacity: 0.75; }
+
+.mypage-body { padding: 16px 16px 100px; }
+.mypage-menu-group {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.mypage-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 14px;
+  gap: 12px;
+  transition: background 0.1s;
+}
+.mypage-menu-item:last-child { border-bottom: none; }
+.mypage-menu-item:active { background: var(--bg); }
+.mypage-menu-icon { font-size: 20px; width: 28px; text-align: center; }
+.mypage-menu-text { flex: 1; }
+.mypage-menu-arrow { color: var(--muted); }
+
+/* ── STATUS SCREEN ── */
+.status-body { padding: 16px 16px 100px; }
+.status-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.status-card:active { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.status-card-top {
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  gap: 12px;
+}
+.status-card-img {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  background: var(--bg);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  overflow: hidden;
+}
+.status-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.status-card-info { flex: 1; min-width: 0; }
+.status-card-title { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-card-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.status-track {
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.track-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 10px;
+}
+.track-steps::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 10px; right: 10px;
+  height: 2px;
+  background: var(--border);
+}
+.track-progress-line {
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  height: 2px;
+  background: var(--accent);
+  transition: width 1s ease;
+}
+.track-step { display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; z-index: 1; }
+.track-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  border: 2px solid var(--white);
+}
+.track-dot.done { background: var(--accent); color: #fff; }
+.track-dot.active { background: var(--primary); color: #fff; animation: pulse-dot 1.5s infinite; }
+.track-dot.pending { background: var(--border); color: var(--muted); }
+@keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(0,82,155,0.4)} 50%{box-shadow:0 0 0 6px rgba(0,82,155,0)} }
+.track-label { font-size: 9px; color: var(--muted); text-align: center; line-height: 1.2; }
 </style>
+<!-- GWP SDK: 고팡 위젯 프로토콜 (위젯 모드일 때만 활성화, 독립 실행 시 무해) -->
+<script src="/gwp-sdk.js"></script>
 </head>
 <body>
+<div id="app">
 
-<header>
-  <div>
-    <div class="title">🌊 K-Cleaner</div>
-    <div class="sub">제주 스마트 신고</div>
+  <!-- HOME SCREEN -->
+  <div class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="topbar-logo">F</div>
+      <div class="topbar-info">
+        <div class="topbar-title">FIIL.kr</div>
+        <div class="topbar-sub">제주 스마트 민원 신고</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--accent);font-weight:600;">
+        <span class="live-dot"></span> 실시간
+      </div>
+    </div>
+
+    <div class="home-banner">
+      <div class="home-banner-badge"><span class="live-dot"></span> AI 분석 실시간 작동 중</div>
+      <h2>📸 사진 한 장으로<br>제주를 지킵니다</h2>
+      <p>응급환자 · 환경오염 · 불법투기 · 재난안전<br>AI가 즉시 분석하고 담당부서가 출동합니다</p>
+    </div>
+
+    <div class="home-stats">
+      <div class="home-stat"><span class="home-stat-val">2,847</span><div class="home-stat-label">누적 신고</div></div>
+      <div class="home-stat"><span class="home-stat-val">94%</span><div class="home-stat-label">해결률</div></div>
+      <div class="home-stat"><span class="home-stat-val">28분</span><div class="home-stat-label">평균응답</div></div>
+    </div>
+
+    <div class="section-heading">빠른 신고</div>
+    <button class="report-cta" onclick="goScreen('screen-report')">
+      <div class="report-cta-icon">📷</div>
+      <div class="report-cta-text">
+        <span class="report-cta-title">사진으로 신고하기</span>
+        <span class="report-cta-sub">사진 + AI 분석 + 자동 배정 → 즉시 출동</span>
+      </div>
+    </button>
+
+    <div class="section-heading">카테고리별 신고</div>
+    <div class="scenario-grid-home">
+      <button class="scenario-btn" onclick="goScreen('screen-report','응급환자')">
+        <span class="scenario-btn-icon">🚨</span>
+        <span class="scenario-btn-title">응급환자</span>
+        <span class="scenario-btn-tag">긴급 대응</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','해안쓰레기')">
+        <span class="scenario-btn-icon">🏖️</span>
+        <span class="scenario-btn-title">해안쓰레기</span>
+        <span class="scenario-btn-tag">환경·수거팀</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','불법투기')">
+        <span class="scenario-btn-icon">🗑️</span>
+        <span class="scenario-btn-title">불법투기</span>
+        <span class="scenario-btn-tag">환경과</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','식당위생')">
+        <span class="scenario-btn-icon">🍽️</span>
+        <span class="scenario-btn-title">식당위생/평가</span>
+        <span class="scenario-btn-tag">위생검사팀</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','도로파손')">
+        <span class="scenario-btn-icon">🚧</span>
+        <span class="scenario-btn-title">도로파손</span>
+        <span class="scenario-btn-tag">도로과</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','기타')">
+        <span class="scenario-btn-icon">➕</span>
+        <span class="scenario-btn-title">기타 신고</span>
+        <span class="scenario-btn-tag">AI 자동분류</span>
+      </button>
+    </div>
+
+    <div class="section-heading">최근 신고 현황</div>
+    <div class="recent-list">
+      <div class="recent-item">
+        <div class="recent-photo">🏖️</div>
+        <div class="recent-info">
+          <div class="recent-title">협재해수욕장 해안쓰레기</div>
+          <div class="recent-loc">📍 한림읍 협재리 · 14분 전</div>
+        </div>
+        <span class="recent-badge badge-active">출동중</span>
+      </div>
+      <div class="recent-item">
+        <div class="recent-photo">🚧</div>
+        <div class="recent-info">
+          <div class="recent-title">일주서로 포트홀 발생</div>
+          <div class="recent-loc">📍 애월읍 · 1시간 전</div>
+        </div>
+        <span class="recent-badge badge-done">완료</span>
+      </div>
+      <div class="recent-item">
+        <div class="recent-photo">🗑️</div>
+        <div class="recent-info">
+          <div class="recent-title">중문관광단지 불법투기</div>
+          <div class="recent-loc">📍 서귀포시 중문동 · 2시간 전</div>
+        </div>
+        <span class="recent-badge badge-done">완료</span>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item active" onclick="showNav('home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
+      <button class="nav-item" onclick="goScreen('screen-report')"><div class="nav-item-icon">📷</div><div class="nav-item-label">신고</div></button>
+      <button class="nav-item" onclick="goScreen('screen-status');_loadStatusScreen()"><div class="nav-item-icon">📋</div><div class="nav-item-label">내 신고</div></button>
+      <button class="nav-item" onclick="goScreen('screen-mypage')"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
+    </div>
   </div>
-  <div class="sub" id="hdr-status">연결 중…</div>
-</header>
 
-<main>
+  <!-- REPORT SCREEN -->
+  <div class="screen hidden" id="screen-report">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goBack()">←</button>
+      <div class="topbar-info">
+        <div class="topbar-title">신고하기</div>
+        <div class="topbar-sub">AI가 자동으로 분석합니다</div>
+      </div>
+    </div>
+    <div class="report-scroll">
+      <!-- Sender Info -->
+      <div class="sender-info-box">
+        <div class="sender-avatar">👤</div>
+        <div class="sender-details">
+          <span class="sender-name" id="senderName">혼디 사용자</span>
+          <span class="sender-phone" id="senderPhone">프로필 확인 중…</span>
+        </div>
+        <span style="font-size:10px;color:var(--accent);font-weight:700;">✓ 인증</span>
+      </div>
 
-  <div class="card">
-    <div class="user-row">
-      <div class="avatar">👤</div>
-      <div>
-        <div class="user-name" id="user-name">확인 중…</div>
-        <div class="user-meta" id="user-phone">&nbsp;</div>
+      <!-- Photo Upload -->
+      <div class="form-label">사진 첨부 <span>*</span></div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
+        <img id="previewImg" class="upload-preview" style="display:none;">
+        <div id="uploadPrompt">
+          <div class="upload-zone-icon">📷</div>
+          <div class="upload-zone-text">사진을 첨부하세요</div>
+          <div class="upload-zone-sub">탭하여 카메라 또는 갤러리 선택</div>
+        </div>
+        <div class="upload-overlay" id="uploadOverlay" style="display:none;">
+          <button class="upload-overlay-btn" onclick="event.stopPropagation();document.getElementById('photoInput').click()">🔄 변경</button>
+          <button class="upload-overlay-btn" onclick="event.stopPropagation();clearPhoto()">✕ 삭제</button>
+        </div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+
+      <!-- GPS -->
+      <div class="gps-bar" id="gpsBar" onclick="requestGPS()" style="cursor:pointer;">
+        <div class="gps-spinner" id="gpsSpinner" style="display:none;"></div>
+        <span style="white-space:nowrap;">📍 GPS</span>
+        <span class="gps-bar-val" id="gpsVal">탭하여 현재 위치 확인</span>
+      </div>
+
+      <!-- Category -->
+      <div class="form-group">
+        <label class="form-label">신고 유형 <span>*</span></label>
+        <div class="form-select-wrap">
+          <select class="form-select" id="categorySelect">
+            <option value="">유형 선택</option>
+            <option value="응급환자">🚨 응급환자 발생</option>
+            <option value="해안쓰레기">🏖️ 해안·해양 쓰레기</option>
+            <option value="불법투기">🗑️ 쓰레기 불법투기</option>
+            <option value="도로파손">🚧 도로 파손·위험</option>
+            <option value="식당위생">🍽️ 식당 위생·평가</option>
+            <option value="산불연기">🔥 산불·연기 발생</option>
+            <option value="수질오염">🌊 수질 오염</option>
+            <option value="소음진동">🔊 소음·진동</option>
+            <option value="기타">➕ 기타 (AI 자동분류)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label class="form-label">상황 설명 <span style="color:var(--muted);font-weight:400;">(선택)</span></label>
+        <textarea class="form-textarea" id="descInput" placeholder="AI가 사진으로 자동 분석하지만, 추가 정보를 입력하면 더 정확합니다.&#10;예) '오후 2시쯤 발생', '냄새가 심함', '이미 신고한 적 있음'"></textarea>
+      </div>
+
+      <button class="submit-btn" onclick="submitReport()" id="submitBtn">
+        <span>🤖</span> AI 분석 후 신고 접수
+      </button>
+    </div>
+  </div>
+
+  <!-- AI ANALYSIS SCREEN -->
+  <div class="screen hidden" id="screen-analysis">
+    <div class="topbar">
+      <div class="topbar-info">
+        <div class="topbar-title">AI 분석 중</div>
+        <div class="topbar-sub">Claude Vision이 사진을 분석합니다</div>
+      </div>
+    </div>
+    <div class="analysis-header">
+      <h3>🤖 AI 자동 분석</h3>
+      <p>사진, GPS, 시간 정보를 종합 분석하여<br>최적의 대응 방안을 도출합니다</p>
+    </div>
+    <div class="analysis-photo-strip">
+      <div class="analysis-photo" id="analysisPic">
+        <div class="analysis-photo-overlay">
+          <div class="analysis-photo-label">🔍 AI 스캔 중</div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-thinking" id="aiThinking">
+      <div class="ai-step-item" id="step1">
+        <div class="ai-step-dot" id="dot1">1</div>
+        <div class="ai-step-text">📡 GPS 좌표 및 발신자 정보 자동 추출</div>
+        <div class="ai-step-spinner" id="sp1" style="display:none"></div>
+        <span id="ck1" style="display:none">✅</span>
+      </div>
+      <div class="ai-step-item" id="step2">
+        <div class="ai-step-dot" id="dot2">2</div>
+        <div class="ai-step-text">🖼 사진 객체 인식 및 상황 판단</div>
+        <div class="ai-step-spinner" id="sp2" style="display:none"></div>
+        <span id="ck2" style="display:none">✅</span>
+      </div>
+      <div class="ai-step-item" id="step3">
+        <div class="ai-step-dot" id="dot3">3</div>
+        <div class="ai-step-text">🏷 신고 유형 분류 및 긴급도 평가</div>
+        <div class="ai-step-spinner" id="sp3" style="display:none"></div>
+        <span id="ck3" style="display:none">✅</span>
+      </div>
+      <div class="ai-step-item" id="step4">
+        <div class="ai-step-dot" id="dot4">4</div>
+        <div class="ai-step-text">📋 대응 방안 생성 및 담당부서 배정</div>
+        <div class="ai-step-spinner" id="sp4" style="display:none"></div>
+        <span id="ck4" style="display:none">✅</span>
+      </div>
+      <div class="ai-step-item" id="step5">
+        <div class="ai-step-dot" id="dot5">5</div>
+        <div class="ai-step-text">⛓ 블록체인 해시 생성 및 신고 접수</div>
+        <div class="ai-step-spinner" id="sp5" style="display:none"></div>
+        <span id="ck5" style="display:none">✅</span>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <label class="field-label">사진 첨부 <span class="req">*</span></label>
-    <div class="photo-drop" id="photo-drop">
-      <input type="file" id="photo-input" accept="image/*" capture="environment">
-      <div id="photo-placeholder">
-        <div style="font-size:28px;">📷</div>
-        <div>사진을 첨부하세요</div>
-        <div class="hint">탭하여 카메라 또는 갤러리 선택</div>
+  <!-- RESULT SCREEN -->
+  <div class="screen hidden" id="screen-result">
+    <div class="result-header">
+      <div class="result-check">✅</div>
+      <h3>신고 접수 완료</h3>
+      <p>AI 분석이 완료되었습니다. 담당팀에 즉시 배정됩니다.</p>
+      <div class="result-code" id="resultCode">RPT-2026-0000</div>
+    </div>
+    <div class="result-body">
+      <div class="result-card">
+        <div class="result-card-title">신고 정보 (자동 입력)</div>
+        <div class="result-row"><span class="result-key">신고자</span><span class="result-val" id="resReporter">혼디 사용자</span></div>
+        <div class="result-row"><span class="result-key">위치</span><span class="result-val" id="resLoc">제주시 연동 일대</span></div>
+        <div class="result-row"><span class="result-key">GPS</span><span class="result-val" id="resGps" style="font-family:'IBM Plex Mono',monospace;font-size:11px;">33.4996, 126.5312</span></div>
+        <div class="result-row"><span class="result-key">시각</span><span class="result-val" id="resTime">—</span></div>
+        <div class="result-row"><span class="result-key">유형</span><span class="result-val" id="resType">—</span></div>
+        <div class="result-row"><span class="result-key">긴급도</span><span class="result-val" id="resUrgency">—</span></div>
       </div>
-      <img id="photo-preview" style="display:none;">
-    </div>
 
-    <div class="loc-box pending" id="loc-box">
-      <span>📍</span><span id="loc-text">위치 확인 중…</span>
+      <div class="ai-analysis-box">
+        <div class="ai-analysis-box-title">🤖 AI 분석 결과</div>
+        <div class="ai-analysis-text" id="aiAnalysisText">분석 중...</div>
+      </div>
+
+      <div class="result-card-title" style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:10px 0 8px;">권고 조치 사항</div>
+      <div class="action-list" id="actionList"></div>
+
+      <div class="result-btns">
+        <button class="submit-btn" onclick="goScreen('screen-status')">📋 내 신고 현황 보기</button>
+        <button class="btn-outline" onclick="goScreen('screen-home')">🏠 홈으로 돌아가기</button>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <label class="field-label">신고 유형 <span class="req">*</span></label>
-    <select id="report-type">
-      <option value="">유형 선택</option>
-      <option value="MAR-PLA">해양 쓰레기 (플라스틱·비닐·스티로폼)</option>
-      <option value="MAR-NET">폐어구·폐그물</option>
-      <option value="MAR-OIL">기름·화학물질 유출</option>
-      <option value="LND-ILL">불법 투기</option>
-      <option value="LND-RVR">하천·수질 오염</option>
-      <option value="AIR-BRN">불법 소각</option>
-      <option value="ETC">기타</option>
-    </select>
-
-    <label class="field-label" style="margin-top:14px;">상황 설명 (선택)</label>
-    <textarea id="desc" placeholder="AI가 사진으로 자동 분석하지만, 추가 정보를 입력하면 더 정확합니다.&#10;예) '오후 2시쯤 발생', '냄새가 심함', '이미 신고한 적 있음'"></textarea>
-
-    <div id="analysis-result" class="analysis-box" style="display:none;"></div>
+  <!-- STATUS SCREEN -->
+  <div class="screen hidden" id="screen-status">
+    <div class="topbar">
+      <div class="topbar-logo">F</div>
+      <div class="topbar-info">
+        <div class="topbar-title">내 신고 현황</div>
+        <div class="topbar-sub">실시간 처리 상태</div>
+      </div>
+    </div>
+    <div class="status-body">
+      <div class="status-card">
+        <div class="status-card-top">
+          <div class="status-card-img">🏖️</div>
+          <div class="status-card-info">
+            <div class="status-card-title">협재 해안쓰레기 신고</div>
+            <div class="status-card-meta">RPT-2026-2841 · 2026.05.14</div>
+          </div>
+          <span class="recent-badge badge-active">출동중</span>
+        </div>
+        <div class="status-track">
+          <div class="track-steps">
+            <div class="track-progress-line" style="width:60%"></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">접수</div></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">분류</div></div>
+            <div class="track-step"><div class="track-dot active">🚗</div><div class="track-label">출동</div></div>
+            <div class="track-step"><div class="track-dot pending">·</div><div class="track-label">처리</div></div>
+            <div class="track-step"><div class="track-dot pending">·</div><div class="track-label">완료</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-card-top">
+          <div class="status-card-img">🚧</div>
+          <div class="status-card-info">
+            <div class="status-card-title">일주서로 포트홀 신고</div>
+            <div class="status-card-meta">RPT-2026-2830 · 2026.05.13</div>
+          </div>
+          <span class="recent-badge badge-done">완료</span>
+        </div>
+        <div class="status-track">
+          <div class="track-steps">
+            <div class="track-progress-line" style="width:100%"></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">접수</div></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">분류</div></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">출동</div></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">처리</div></div>
+            <div class="track-step"><div class="track-dot done">✓</div><div class="track-label">완료</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
+      <button class="nav-item" onclick="goScreen('screen-report')"><div class="nav-item-icon">📷</div><div class="nav-item-label">신고</div></button>
+      <button class="nav-item active" onclick="_loadStatusScreen()"><div class="nav-item-icon">📋</div><div class="nav-item-label">내 신고</div></button>
+      <button class="nav-item" onclick="goScreen('screen-mypage')"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
+    </div>
   </div>
 
-</main>
+  <!-- MYPAGE SCREEN -->
+  <div class="screen hidden" id="screen-mypage">
+    <div class="mypage-header">
+      <div class="mypage-avatar">👤</div>
+      <div class="mypage-name" id="mypageName">혼디 사용자</div>
+      <div class="mypage-phone" id="mypagePhone">프로필 확인 중…</div>
+      <div class="mypage-score">
+        <div class="mypage-score-item"><span class="mypage-score-val">12</span><div class="mypage-score-label">신고 건수</div></div>
+        <div class="mypage-score-item"><span class="mypage-score-val">92%</span><div class="mypage-score-label">처리율</div></div>
+        <div class="mypage-score-item"><span class="mypage-score-val">🏆</span><div class="mypage-score-label">환경지킴이</div></div>
+      </div>
+    </div>
+    <div class="mypage-body">
+      <div class="mypage-menu-group">
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">📋</span><span class="mypage-menu-text">신고 내역</span><span class="mypage-menu-arrow">›</span></div>
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">🔔</span><span class="mypage-menu-text">알림 설정</span><span class="mypage-menu-arrow">›</span></div>
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">📍</span><span class="mypage-menu-text">내 위치 관리</span><span class="mypage-menu-arrow">›</span></div>
+      </div>
+      <div class="mypage-menu-group">
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">🔍</span><span class="mypage-menu-text">신고 조회 (번호 입력)</span><span class="mypage-menu-arrow">›</span></div>
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">⛓</span><span class="mypage-menu-text">블록체인 기록 열람</span><span class="mypage-menu-arrow">›</span></div>
+      </div>
+      <div class="mypage-menu-group">
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">❓</span><span class="mypage-menu-text">도움말 · FAQ</span><span class="mypage-menu-arrow">›</span></div>
+        <div class="mypage-menu-item"><span class="mypage-menu-icon">🔒</span><span class="mypage-menu-text">개인정보 처리방침</span><span class="mypage-menu-arrow">›</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goScreen('screen-home')"><div class="nav-item-icon">🏠</div><div class="nav-item-label">홈</div></button>
+      <button class="nav-item" onclick="goScreen('screen-report')"><div class="nav-item-icon">📷</div><div class="nav-item-label">신고</div></button>
+      <button class="nav-item" onclick="goScreen('screen-status')"><div class="nav-item-icon">📋</div><div class="nav-item-label">내 신고</div></button>
+      <button class="nav-item active"><div class="nav-item-icon">👤</div><div class="nav-item-label">마이</div></button>
+    </div>
+  </div>
 
-<div class="footer-btn">
-  <button class="submit-btn" id="submit-btn">
-    <span id="submit-icon">🤖</span><span id="submit-label">AI 분석 후 신고 접수</span>
-  </button>
-</div>
+</div><!-- /app -->
 
 <script>
-(function(){
-  'use strict';
+// ══════════════════════════════════════════════════
+// 설정 — API 키는 dashboard.html에서 관리자가 입력
+//        localStorage('fiil_llm_config')에서 런타임 로드
+// ══════════════════════════════════════════════════
+const PROXY_URL = 'https://drone-proxy.tensor-city.workers.dev';
+// 혼디 본체 공유 백엔드 — 로그인한 실제 사용자 프로필(이름/전화) 조회용.
+// 2026-09-22: K-Cleaner가 자체 로그인 없이 "김제주" 더미 텍스트를 항상
+// 보여주던 결함을 고치기 위해 추가 — GWP token(=혼디 guid)으로 조회한다.
+const HONDI_PROXY_URL = 'https://hondi-proxy.tensor-city.workers.dev';
+const SB_URL    = 'https://ebbecjfrwaswbdybbgiu.supabase.co';
+const SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViYmVjamZyd2Fzd2JkeWJiZ2l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjE5ODQsImV4cCI6MjA5NTEzNzk4NH0.H2ahQKtWdSke04Pdi3hDY86pdTx7UUKPUpQMlS_zciA';
 
-  // ── 프록시(혼디 공용 백엔드) — 이 값 하나만으로 GWP 규약(token/facts)을
-  // 소비하고, 신고 확정 시 다시 opener(혼디 메인 탭)에 GWP_* postMessage로
-  // 보고한다. fiil.kr 시절엔 이 파일이 독립 배포되어 있어 hondi.net의
-  // 프로필/위치/공용 LLM 프록시를 전혀 쓰지 않았다 — clean.hondi.net 이전과
-  // 함께 아래 두 가지를 바로잡는다:
-  //   1) 사용자 정보: token(GUID)으로 실제 프로필을 조회한다 (더미 "김제주" 제거)
-  //   2) 위치 정보: 새로 GPS를 요청하기 전에, 혼디 AI 비서가 이미 넘겨준
-  //      facts.currentLocation(및 사진 EXIF GPS)을 우선 사용한다.
-  const PROXY = 'https://hondi-proxy.tensor-city.workers.dev';
+// Gemini Vision은 Worker를 통해서만 사용 (이미지 분석 전담)
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
-  const qs = new URLSearchParams(location.search);
-  const TOKEN   = qs.get('token')   || '';   // 사용자 GUID(익명 식별자) — _gwpLaunch()가 전달
-  const ORIGIN  = qs.get('origin')  || '';   // 이 탭을 연 hondi.net 오리진(postMessage 대상)
-  const CTX_B64 = qs.get('ctx')     || '';   // 사용자가 원래 하려던 발화(있으면)
-  const FACTS_B64 = qs.get('facts') || '';   // 혼디가 이미 계산해둔 부가정보(currentLocation 등)
+// ── LLM 설정 로더 ─────────────────────────────────
+function _getLLMConfig() {
+  try {
+    const raw = localStorage.getItem('fiil_llm_config');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
 
-  function b64uDecodeUtf8(b64) {
-    try { return decodeURIComponent(escape(atob(b64))); } catch (e) { return ''; }
+// 2026-09-22: 이 배너는 fiil_llm_config(구버전 클라이언트 키 설정)가
+// 비어 있으면 "AI 분석을 쓰려면 키를 설정하라"고 항상 경고했지만, 실제
+// 1차 분석 경로(_openaiFetch → drone-proxy Worker → 서버 Gemini 키)는
+// 클라이언트 키가 전혀 필요 없다 — 즉 매번 뜨는 오탐(false positive)이었다.
+// fiil_llm_config는 DeepSeek 폴백(1차 경로 실패 시에만 사용) 전용 설정이므로,
+// 정상 동작 중에는 배너를 띄우지 않고 콘솔에만 남긴다. 폴백이 실제로
+// 필요한데 키가 없는 경우는 _deepseekVisionFallback()이 그 시점에 바로
+// 에러 메시지로 알린다(분석 실패 사유가 화면에 그대로 노출됨).
+function _checkLLMConfig() {
+  const cfg = _getLLMConfig();
+  if (!cfg || !cfg.apiKey) {
+    console.info('[LLM] DeepSeek 폴백 키 미설정 — 1차 경로(Gemini/Worker)는 영향 없음.');
+    return false;
   }
+  return true;
+}
 
-  const ctxText = CTX_B64 ? b64uDecodeUtf8(CTX_B64) : '';
-  let facts = {};
-  if (FACTS_B64) {
-    try { facts = JSON.parse(b64uDecodeUtf8(FACTS_B64)) || {}; }
-    catch (e) { console.warn('[K-Cleaner] facts 파싱 실패:', e.message); }
+// ── 혼디 실사용자 프로필 조회 ─────────────────────
+// 2026-09-22: "김제주 / 010-****-5678"은 목업 시절 하드코딩된 더미였고,
+// 이 페이지 어디에도 그걸 실제 값으로 대체하는 코드가 없었다(신고자
+// 이름/전화가 항상 더미로 표시·제출되던 원인). 혼디가 GWP로 넘겨주는
+// token(=혼디 계정 guid)으로 hondi-proxy의 공개 프로필 조회 엔드포인트를
+// 불러 실사용자 이름/전화로 교체한다. 실패 시에는 더미가 아니라 정직한
+// "혼디 사용자/정보 없음" 폴백으로 떨어진다.
+window.__hondiProfile = null;
+
+function _maskPhone(phone) {
+  const digits = String(phone || '').replace(/[^0-9]/g, '');
+  if (digits.length < 7) return phone || null;
+  return digits.slice(0, 3) + '-****-' + digits.slice(-4);
+}
+
+async function _loadHondiProfile(guid) {
+  if (!guid) return null;
+  try {
+    const res = await fetch(`${HONDI_PROXY_URL}/profile?guid=${encodeURIComponent(guid)}`);
+    if (!res.ok) throw new Error('profile HTTP ' + res.status);
+    const data = await res.json();
+    if (data && data.ok && data.profile) return data.profile;
+    return null;
+  } catch (e) {
+    console.warn('[Profile] 혼디 프로필 조회 실패:', e.message);
+    return null;
   }
-  if (ctxText) {
-    const descEl = document.getElementById('desc');
-    if (descEl && !descEl.value) descEl.value = ctxText;
+}
+
+function _applyProfileToUI(profile) {
+  window.__hondiProfile = profile;
+  const name  = (profile && profile.name)  || '혼디 사용자';
+  const phone = (profile && profile.phone) ? _maskPhone(profile.phone) : '전화번호 정보 없음';
+  const addr  = (profile && profile.address) || gpsAddress || '';
+  const label = profile ? `${name} (자동입력)` : name;
+
+  const senderNameEl  = document.getElementById('senderName');
+  const senderPhoneEl = document.getElementById('senderPhone');
+  if (senderNameEl)  senderNameEl.textContent  = label;
+  if (senderPhoneEl) senderPhoneEl.textContent = addr ? `${phone} · ${addr}` : phone;
+
+  const mypageNameEl  = document.getElementById('mypageName');
+  const mypagePhoneEl = document.getElementById('mypagePhone');
+  if (mypageNameEl)  mypageNameEl.textContent  = name;
+  if (mypagePhoneEl) mypagePhoneEl.textContent = phone;
+
+  const reporterEl = document.getElementById('resReporter');
+  if (reporterEl) reporterEl.textContent = phone !== '전화번호 정보 없음' ? `${name} · ${phone}` : name;
+}
+
+// token(GWP 쪽 URL 파라미터) → 실프로필 조회 → 화면 반영까지 한 번에.
+// GWP 위젯이 아닌 일반 방문(직접 token 파라미터로 접속)에도 동일하게 동작.
+async function _initHondiProfile() {
+  const urlToken = new URLSearchParams(location.search).get('token');
+  if (urlToken) localStorage.setItem('gopang_token', urlToken);
+  const token = urlToken || localStorage.getItem('gopang_token');
+  const profile = await _loadHondiProfile(token);
+  _applyProfileToUI(profile);
+}
+
+// ── 프롬프트 인라인 (GitHub CORS 우회) ──────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 프롬프트 로더 — 인라인 상수 반환 (fetch 불필요)
+// ── 프롬프트 캐시 (한번 fetch하면 재사용) ────────
+const _promptCache = {};
+const _promptFiles = {
+  'router':   'prompts/SP-00-ROUTER.txt',
+  'img':      'prompts/SP-14-IMG.txt',
+  'cln':      'prompts/SP-14-CLN.txt',
+  'sp15':     'prompts/SP-15-IMG.txt',
+  'sp15_cln': 'prompts/SP-15-CLN.txt',
+  'sp16':     'prompts/SP-16-IMG.txt',
+  'sp16_cln': 'prompts/SP-16-CLN.txt',
+  'sp17':     'prompts/SP-17-IMG.txt',
+  'sp17_cln': 'prompts/SP-17-CLN.txt',
+  'sp18':     'prompts/SP-18-IMG.txt',
+  'sp18_cln': 'prompts/SP-18-CLN.txt',
+};
+async function _loadPrompt(key) {
+  if (_promptCache[key]) return _promptCache[key];
+  const path = _promptFiles[key];
+  if (!path) return '';
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`프롬프트 로드 실패: ${path} (${res.status})`);
+    const text = await res.text();
+    _promptCache[key] = text;
+    console.log(`[Prompt] ${key} 로드 완료 (${text.length} chars)`);
+    return text;
+  } catch(e) {
+    console.error('[Prompt] 로드 오류:', e.message);
+    return '';
   }
+}
 
-  // ── opener(혼디 메인 탭)에 GWP 프로토콜 메시지 전송 ──────────────
-  function postToOpener(msg) {
-    if (!window.opener || !ORIGIN) return;
-    try { window.opener.postMessage(Object.assign({ type: 'GWP_MESSAGE' }, msg), ORIGIN); }
-    catch (e) { console.warn('[K-Cleaner] postMessage 실패:', e.message); }
-  }
-  function postDone(payload) {
-    if (!window.opener || !ORIGIN) return;
-    try { window.opener.postMessage(Object.assign({ type: 'GWP_DONE' }, payload), ORIGIN); }
-    catch (e) { console.warn('[K-Cleaner] GWP_DONE 전송 실패:', e.message); }
-  }
+// ── Supabase 헬퍼 ─────────────────────────────────
+// ── 한국 시간(KST) ISO 문자열 반환 ────────────────
+function _nowKST() {
+  // UTC+9 오프셋을 명시하여 저장
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().replace('Z', '+09:00');
+}
 
-  document.getElementById('hdr-status').textContent = ORIGIN ? '혼디 연결됨' : '독립 접속';
+async function _sbFetch(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : '',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SB_URL + '/rest/v1/' + path, opts);
+  if (!res.ok) throw new Error('Supabase ' + res.status);
+  return method === 'POST' ? res.json() : res.json();
+}
 
-  // ══════════════════════════════════════════════════════════════
-  // 1) 사용자 정보 — token(GUID)으로 실제 프로필 조회
-  //    (기존 fiil.kr 화면의 "김제주(자동입력)" 더미 데이터를 대체)
-  // ══════════════════════════════════════════════════════════════
-  const userNameEl  = document.getElementById('user-name');
-  const userPhoneEl = document.getElementById('user-phone');
+// ── Gemini Vision 분석 (SP-14-IMG) ───────────────
+// ── Gemini fetch: Worker 호출 → 실패 시 클라이언트에서 DeepSeek 폴백 ──
+// v2.0: 서버(Worker)의 자동 DeepSeek 폴백을 제거. 대신 여기서 직접
+// dashboard.html에 등록된 폴백 키로 DeepSeek V4 Flash를 호출한다.
+// DeepSeek는 아직 이미지 입력을 지원하지 않으므로(2026-06 기준 공식
+// 미지원), 사진은 분석할 수 없고 텍스트(시스템 프롬프트+설명)만으로
+// 제한적인 폴백 분석을 시도한다 — 사진 내용 자체는 인식하지 못한다.
+const _FALLBACK_DEEPSEEK_KEY = 'fiil_deepseek_fallback_key';
+const _FALLBACK_MODEL = 'deepseek-v4-flash';
 
-  function maskPhone(phone) {
-    if (!phone) return null;
-    const digits = phone.replace(/[^0-9]/g, '');
-    if (digits.length < 7) return phone;
-    return digits.slice(0, 3) + '-****-' + digits.slice(-4);
-  }
-
-  async function loadRealProfile() {
-    if (!TOKEN) {
-      userNameEl.textContent = '게스트';
-      userNameEl.innerHTML += ' <span class="badge guest">비로그인</span>';
-      userPhoneEl.textContent = '신고 접수 후 별도 연락처를 남겨주세요';
-      return;
-    }
-    userNameEl.textContent = '조회 중…';
-    try {
-      const res = await fetch(`${PROXY}/profile?guid=${encodeURIComponent(TOKEN)}`, { cache: 'no-cache' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const p = data && data.profile;
-      if (p && p.name) {
-        userNameEl.textContent = p.name;
-        userNameEl.innerHTML += ' <span class="badge">인증</span>';
-        const masked = maskPhone(p.phone);
-        userPhoneEl.textContent = masked ? masked : (p.address || '연락처 비공개');
-      } else {
-        // 프로필은 있지만 이름이 비공개이거나 아직 없음 — 더미로 채우지 않는다.
-        userNameEl.textContent = '혼디 사용자';
-        userNameEl.innerHTML += ' <span class="badge">인증</span>';
-        userPhoneEl.textContent = p && p.address ? p.address : '연락처 비공개';
+async function _openaiFetch(body) {
+  // Worker v2.0: Gemini 키는 Worker 환경변수에서 관리
+  let geminiError = null;
+  try {
+    const res = await fetch(
+      `${PROXY_URL}/gemini/${GEMINI_MODEL}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       }
-    } catch (e) {
-      console.warn('[K-Cleaner] 프로필 조회 실패:', e.message);
-      userNameEl.textContent = '혼디 사용자';
-      userNameEl.innerHTML += ' <span class="badge guest">확인 필요</span>';
-      userPhoneEl.textContent = '프로필을 불러오지 못했습니다';
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // 2) 위치 정보 — 새로 GPS를 요청하기 전에 이미 확보된 값부터 사용
-  //    우선순위: ① 첨부 사진의 EXIF GPS(현장 좌표, 가장 정확)
-  //             ② 혼디 AI 비서가 넘겨준 facts.currentLocation
-  //             ③ 이 페이지 자체의 브라우저 GPS(위 둘 다 없을 때만, 타임아웃 명확화)
-  // ══════════════════════════════════════════════════════════════
-  const locBox  = document.getElementById('loc-box');
-  const locText = document.getElementById('loc-text');
-  let resolvedLocation = null; // { lat, lng, address, source }
-
-  function setLocUI(state, text) {
-    locBox.className = 'loc-box ' + state;
-    locText.textContent = text;
-  }
-
-  function applyLocation(loc, sourceLabel) {
-    resolvedLocation = loc;
-    const addr = loc.address ? ` (${loc.address})` : '';
-    const coord = (loc.lat != null && loc.lng != null) ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}` : '';
-    setLocUI('ok', `${sourceLabel}: ${coord}${addr}`.trim());
-  }
-
-  // ② facts.currentLocation 우선 반영 — 문자열(주소) 또는 "lat,lng" 형태
-  (function useFactsLocationIfAny() {
-    if (!facts || !facts.currentLocation) return;
-    const cl = String(facts.currentLocation);
-    const m = cl.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
-    if (m) {
-      applyLocation({ lat: parseFloat(m[1]), lng: parseFloat(m[2]), address: null }, '혼디 비서 제공 위치');
-    } else {
-      applyLocation({ lat: null, lng: null, address: cl }, '혼디 비서 제공 위치');
-    }
-  })();
-
-  // ③ 브라우저 GPS — facts에서 위치를 못 얻었을 때만, 타임아웃을 짧고
-  //    명확하게 두고 실패 시 "다시 시도" 버튼을 보여준다(과거 fiil.kr처럼
-  //    "GPS 시간 초과. 다시 시도합니다."를 무한 반복하지 않는다).
-  function tryBrowserGeolocation() {
-    if (resolvedLocation) return; // 이미 위치가 있으면 새로 요청하지 않음
-    if (!navigator.geolocation) {
-      setLocUI('err', '이 브라우저는 위치 확인을 지원하지 않습니다. 주소를 직접 입력해주세요.');
-      return;
-    }
-    setLocUI('pending', '이 기기의 GPS로 위치 확인 중…');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        applyLocation({
-          lat: pos.coords.latitude, lng: pos.coords.longitude, address: null,
-        }, '기기 GPS');
-      },
-      (err) => {
-        if (resolvedLocation) return; // EXIF 등 다른 경로가 그 사이 먼저 채웠으면 무시
-        setLocUI('err', 'GPS 확인 실패(' + (err.code === err.PERMISSION_DENIED ? '권한 거부' : '시간 초과') + '). 사진의 위치정보를 사용하거나, 상황 설명에 주소를 적어주세요.');
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
-  }
-
-  if (!resolvedLocation) {
-    // facts로도 못 채웠으면, 사진에서 EXIF를 먼저 시도해볼 여지를 1초 주고
-    // (사용자가 바로 사진을 첨부하는 경우가 많음) 그래도 없으면 기기 GPS로.
-    setTimeout(() => { if (!resolvedLocation) tryBrowserGeolocation(); }, 1000);
-  }
-
-  // ── 사진 EXIF GPS 추출(순수 JS, 외부 라이브러리 불필요) ─────────
-  // 현장 사진 자체의 GPS가 있으면 "대리 신고" 여부와 무관하게 가장
-  // 신뢰도 높은 신고 위치이므로 최우선으로 덮어쓴다.
-  function extractExifGps(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const buf = e.target.result;
-          const view = new DataView(buf);
-          if (view.getUint16(0) !== 0xFFD8) return resolve(null);
-          let offset = 2;
-          while (offset < buf.byteLength - 2) {
-            const marker = view.getUint16(offset); offset += 2;
-            if (marker === 0xFFE1) {
-              const exifHeader = String.fromCharCode(
-                view.getUint8(offset + 2), view.getUint8(offset + 3),
-                view.getUint8(offset + 4), view.getUint8(offset + 5));
-              if (exifHeader !== 'Exif') return resolve(null);
-              const tiffStart = offset + 8;
-              const little = view.getUint16(tiffStart) === 0x4949;
-              const gU = (o, s = 2) => s === 4
-                ? (little ? view.getUint32(tiffStart + o, true) : view.getUint32(tiffStart + o, false))
-                : (little ? view.getUint16(tiffStart + o, true) : view.getUint16(tiffStart + o, false));
-              const ifd0 = gU(4, 4);
-              const entries = gU(ifd0);
-              let gpsPtr = null;
-              for (let i = 0; i < entries; i++) {
-                const e0 = ifd0 + 2 + i * 12;
-                if (gU(e0) === 0x8825) gpsPtr = gU(e0 + 8, 4);
-              }
-              if (!gpsPtr) return resolve(null);
-              const readRat = (o) => {
-                const num = view.getUint32(tiffStart + o, little);
-                const den = view.getUint32(tiffStart + o + 4, little);
-                return den ? num / den : 0;
-              };
-              const toDD = (o) => readRat(o) + readRat(o + 8) / 60 + readRat(o + 16) / 3600;
-              const gEntries = gU(gpsPtr);
-              const g = {};
-              for (let i = 0; i < gEntries; i++) {
-                const ge = gpsPtr + 2 + i * 12;
-                const tag = gU(ge);
-                if ([1, 2, 3, 4].includes(tag)) g[tag] = gU(ge + 8, 4);
-              }
-              if (g[2] == null || g[4] == null) return resolve(null);
-              let lat = toDD(g[2]), lng = toDD(g[4]);
-              const latRef = view.getUint8(tiffStart + (g[1] || 0));
-              const lngRef = view.getUint8(tiffStart + (g[3] || 0));
-              if (latRef === 83) lat = -lat;   // 'S'
-              if (lngRef === 87) lng = -lng;   // 'W'
-              return resolve({ lat, lng });
-            }
-            if ((marker & 0xFF00) !== 0xFF00) break;
-            offset += view.getUint16(offset);
-          }
-          resolve(null);
-        } catch (err) { resolve(null); }
-      };
-      reader.onerror = () => resolve(null);
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // 사진 첨부 UI
-  // ══════════════════════════════════════════════════════════════
-  const photoInput = document.getElementById('photo-input');
-  const photoPreview = document.getElementById('photo-preview');
-  const photoPlaceholder = document.getElementById('photo-placeholder');
-  let attachedFile = null;
-
-  photoInput.addEventListener('change', async () => {
-    const file = photoInput.files && photoInput.files[0];
-    if (!file) return;
-    attachedFile = file;
-    const url = URL.createObjectURL(file);
-    photoPreview.src = url;
-    photoPreview.style.display = 'block';
-    photoPlaceholder.style.display = 'none';
-
-    // EXIF GPS가 있으면 최우선으로 위치를 교체(현장 좌표가 가장 정확)
-    const exif = await extractExifGps(file);
-    if (exif && exif.lat != null) {
-      applyLocation({ lat: exif.lat, lng: exif.lng, address: null }, '사진 GPS(EXIF)');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.candidates?.[0]?.content) {
+        console.log('[Gemini] Worker 호출 성공');
+        return data;
+      }
+      geminiError = data.error?.message || 'Gemini 응답에 content 없음';
+    } else {
+      geminiError = 'Gemini(Worker) HTTP ' + res.status;
     }
-  });
-
-  // ══════════════════════════════════════════════════════════════
-  // 3) AI 분석 — 혼디 공용 LLM 프록시(/deepseek, deepseek-chat vision)를
-  //    사용한다. 기존 fiil.kr처럼 이 화면 자체에 별도 LLM API 키를
-  //    설정해야 하는 요구사항을 없앤다 — 다른 K-서비스와 동일하게
-  //    혼디 플랫폼의 공용 백엔드를 그대로 쓴다.
-  // ══════════════════════════════════════════════════════════════
-  const SP14_IMG_SYSTEM = `당신은 환경 현장 사진을 분석하는 객관적 데이터 추출 전문가다(SP-14-IMG).
-사진에서 보이는 사실만 수치로 추출한다. 판단·해석·견적·보고서 작성은 하지 않는다.
-결과는 반드시 아래 JSON 형식으로만 출력한다. JSON 외 어떠한 텍스트도 출력하지 않는다.
-8대 성분: ST=스티로폼 PL=경질플라스틱 VI=비닐 GL=유리병 ME=금속캔 NT=폐어구 WD=목재 EX=기타
-(ratio_pct 합계 반드시 100. 보이지 않는 성분은 0/false)
-규모: XS(<50kg) S(50~200kg) M(200~400kg) L(400~1000kg) XL(1000kg+)
-지형: SAND|ROCK|CLIFF|WATER|FOREST|UNKNOWN
-위험도: S0(일반) S1(대량) S2(오염위험) S3(유해물질)
-출력 JSON 스키마: {"confidence":0.0,"image_quality":"GOOD|FAIR|POOR","scale":"XS|S|M|L|XL","terrain":"...","risk_level":"S0|S1|S2|S3","total_weight_kg_est":0,"components":{"ST":{"ratio_pct":0,"weight_kg_est":0},"PL":{...},"VI":{...},"GL":{...},"ME":{...},"NT":{...},"WD":{...},"EX":{...}},"scene_description":""}`;
-
-  function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  } catch (e) {
+    geminiError = 'Gemini 네트워크 오류: ' + e.message;
   }
 
-  async function analyzeImage(file, userText) {
-    const dataUrl = await fileToDataUrl(file);
-    const body = {
-      model: 'deepseek-chat', // VISION_MODELS에 등록된 유일한 DeepSeek 비전 모델
-      guid: TOKEN || 'anonymous',
-      messages: [
-        { role: 'system', content: SP14_IMG_SYSTEM },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: userText ? `상황 설명: ${userText}` : '사진을 분석해 JSON으로만 응답하라.' },
-            { type: 'image_url', image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 700,
+  console.warn('[Gemini] 실패:', geminiError, '→ DeepSeek 폴백 시도');
+  return await _deepseekVisionFallback(body, geminiError);
+}
+
+// ── DeepSeek 폴백 (클라이언트 직접 호출, Cloudflare 경유 안 함) ──
+async function _deepseekVisionFallback(geminiBody, geminiError) {
+  const apiKey = localStorage.getItem(_FALLBACK_DEEPSEEK_KEY);
+  if (!apiKey) {
+    throw new Error(`Gemini 실패: ${geminiError} (DeepSeek 폴백 키 미설정 — 관리자 대시보드에서 등록 필요)`);
+  }
+
+  const parts        = geminiBody.contents?.[0]?.parts || [];
+  const textPart      = parts.find(p => p.text)?.text || '';
+  const systemPrompt  = geminiBody.system_instruction?.parts?.[0]?.text || '';
+  const hasImage      = parts.some(p => p.inline_data);
+
+  const messages = [];
+  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+  let userText = textPart || '아래 정보를 분석하여 지정된 JSON 형식으로만 출력하라.';
+  if (hasImage) {
+    userText += '\n\n(주의: 이미지 분석을 시도했으나 DeepSeek는 현재 이미지 입력을 지원하지 않습니다. ' +
+                '사진 내용은 알 수 없으니 image_quality는 "UNKNOWN", confidence는 낮게(0.3 이하) 출력하라.)';
+  }
+  messages.push({ role: 'user', content: userText });
+
+  try {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: _FALLBACK_MODEL, messages, temperature: 0.1, max_tokens: 1500, stream: false }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `DeepSeek HTTP ${res.status}`);
+
+    const text = data.choices?.[0]?.message?.content || '{}';
+    console.log('[DeepSeek 폴백] 성공 (텍스트 전용, 이미지 미분석)');
+    return {
+      candidates: [{ content: { parts: [{ text }], role: 'model' }, finishReason: 'STOP' }],
+      _fallback: true, _fallback_to: _FALLBACK_MODEL, _gemini_error: geminiError,
     };
-    const res = await fetch(`${PROXY}/deepseek`, {
+  } catch (dsError) {
+    throw new Error(`Gemini 실패: ${geminiError} / DeepSeek 폴백도 실패: ${dsError.message}`);
+  }
+}
+
+// ── 멀티 LLM 라우터: dashboard에서 설정한 공급자로 텍스트 호출 ──
+async function _deepseekFetch(payload) {
+  const cfg = _getLLMConfig();
+
+  // ── [비활성화] 설정 없음 → Worker fallback (DeepSeek proxy) ──
+  // dashboard.html(관리자)에서 localStorage('fiil_llm_config')에 저장한
+  // 설정만 사용하도록 변경. 자체 운영 Worker 프록시 폴백은 더 이상 사용하지 않음.
+  /*
+  if (!cfg || !cfg.apiKey) {
+    console.warn('[LLM] 설정 없음 → Worker fallback');
+    const res = await fetch(`${PROXY_URL}/deepseek`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(25000),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('분석 서버 오류 (HTTP ' + res.status + ')');
+    if (!res.ok) throw new Error('LLM(proxy) ' + res.status);
+    return await res.json();
+  }
+  */
+  if (!cfg || !cfg.apiKey) {
+    throw new Error('LLM 설정 없음: 관리자 대시보드(dashboard.html)에서 AI 모델/API 키를 설정하세요.');
+  }
+
+  const { provider, apiKey, model } = cfg;
+  console.log(`[LLM] 공급자: ${provider}, 모델: ${model}`);
+
+  // ── OpenAI 호환 공급자 (DeepSeek / Grok / OpenAI) ──
+  const _openaiCompat = {
+    deepseek: { url: 'https://api.deepseek.com/v1/chat/completions',     defaultModel: 'deepseek-chat' },
+    openai:   { url: 'https://api.openai.com/v1/chat/completions',        defaultModel: 'gpt-4o-mini' },
+    grok:     { url: 'https://api.x.ai/v1/chat/completions',              defaultModel: 'grok-3-mini' },
+  };
+
+  if (_openaiCompat[provider]) {
+    const ep = _openaiCompat[provider];
+    const reqBody = { ...payload, model: model || ep.defaultModel };
+    const res = await fetch(ep.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify(reqBody),
+      signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(30000) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`${provider} API ${res.status}: ${err.slice(0,100)}`);
+    }
+    console.log(`[LLM] ${provider} 호출 성공`);
+    return await res.json();
+  }
+
+  // ── Claude (Anthropic) ──
+  if (provider === 'claude') {
+    const claudeModel = model || 'claude-haiku-4-5-20251001';
+    // Claude API → OpenAI 호환 형식으로 변환
+    const sysMsg = payload.messages?.find(m => m.role === 'system')?.content || '';
+    const userMsgs = payload.messages?.filter(m => m.role !== 'system') || [];
+    const claudeBody = {
+      model: claudeModel,
+      max_tokens: payload.max_tokens || 1500,
+      system: sysMsg,
+      messages: userMsgs,
+    };
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(claudeBody),
+      signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(30000) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Claude API ${res.status}: ${err.slice(0,100)}`);
+    }
     const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content || data?.content || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    // Claude 응답을 OpenAI choices 형식으로 변환
+    console.log('[LLM] Claude 호출 성공');
+    return {
+      choices: [{
+        message: { role: 'assistant', content: data.content?.[0]?.text || '{}' }
+      }]
+    };
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // 제출
-  // ══════════════════════════════════════════════════════════════
-  const submitBtn = document.getElementById('submit-btn');
-  const submitIcon = document.getElementById('submit-icon');
-  const submitLabel = document.getElementById('submit-label');
-  const resultBox = document.getElementById('analysis-result');
-
-  function setSubmitting(on, label) {
-    submitBtn.disabled = on;
-    submitIcon.innerHTML = on ? '<span class="spinner"></span>' : '🤖';
-    submitLabel.textContent = label || 'AI 분석 후 신고 접수';
+  // ── Gemini (텍스트 전용, 이미지 제외) ──
+  if (provider === 'gemini') {
+    const geminiModel = model || 'gemini-2.0-flash';
+    const sysMsg = payload.messages?.find(m => m.role === 'system')?.content || '';
+    const userMsg = payload.messages?.filter(m => m.role === 'user').map(m => m.content).join('\n') || '';
+    const geminiBody = {
+      system_instruction: sysMsg ? { parts: [{ text: sysMsg }] } : undefined,
+      contents: [{ parts: [{ text: userMsg }] }],
+      generationConfig: { temperature: payload.temperature || 0.3, maxOutputTokens: payload.max_tokens || 1500 },
+    };
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(geminiBody),
+        signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(30000) : undefined }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Gemini API ${res.status}: ${err.slice(0,100)}`);
+    }
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    console.log('[LLM] Gemini(text) 호출 성공');
+    return { choices: [{ message: { role: 'assistant', content: text } }] };
   }
 
-  submitBtn.addEventListener('click', async () => {
-    const reportType = document.getElementById('report-type').value;
-    const desc = document.getElementById('desc').value.trim();
+  throw new Error(`지원하지 않는 LLM 공급자: ${provider}`);
+}
 
-    if (!attachedFile) { alert('사진을 먼저 첨부해주세요.'); return; }
-    if (!reportType)   { alert('신고 유형을 선택해주세요.'); return; }
+async function _openaiRoute(imageFile, category, userText) {
+  const routerPrompt = await _loadPrompt('router');
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(imageFile);
+  });
+  const mime = imageFile.type || 'image/jpeg';
+  const body = {
+    system_instruction: { parts: [{ text: routerPrompt }] },
+    contents: [{ parts: [
+      { inline_data: { mime_type: mime, data: base64 } },
+      { text: `신고유형: ${category||'미선택'}\n사용자설명: ${userText||'없음'}\n위 이미지를 분석하여 적합한 SP 코드를 JSON으로만 반환하라.` }
+    ]}],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+  };
+  try {
+    const data = await _openaiFetch(body);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+    if (!result.sp_code) throw new Error('sp_code 없음');
+    console.log('[SP-ROUTER] 결정:', result.sp_code, '신뢰도:', result.confidence);
+    return result;
+  } catch(e) {
+    console.warn('[SP-ROUTER] 실패, SP-14-IMG 기본 사용:', e.message);
+    return { sp_code: 'SP-14-IMG', confidence: 0.5, urgent: false };
+  }
+}
 
-    setSubmitting(true, 'AI 분석 중…');
-    resultBox.style.display = 'none';
+async function _openaiAnalyze(imageFile, spCode) {
+  if (!spCode || spCode === 'SP-00-GEN') {
+    return await _openaiAnalyzeGeneral(imageFile);
+  }
+  const _visionMap = {
+    'SP-14-IMG': 'img',
+    'SP-15-IMG': 'sp15',
+    'SP-16-IMG': 'sp16',
+    'SP-17-IMG': 'sp17',
+    'SP-18-IMG': 'sp18',
+  };
+  const promptKey = _visionMap[spCode] || 'img';
+  const systemPrompt = await _loadPrompt(promptKey);
+  console.log('[OpenAI] 분석 시작, SP:', spCode);
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(imageFile);
+  });
+  const mime = imageFile.type || 'image/jpeg';
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ parts: [
+      { inline_data: { mime_type: mime, data: base64 } },
+      { text: '위 이미지를 분석하여 지정된 JSON 형식으로만 출력하라. JSON 외 텍스트 금지.' }
+    ]}],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 1500 }
+  };
+  try {
+    const data = await _openaiFetch(body);
+    console.log('[OpenAI] 응답:', JSON.stringify(data).slice(0,200));
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch(e) {
+    console.warn('[OpenAI] 분석 실패:', e.message);
+    return null;
+  }
+}
 
-    let analysis = null;
-    try {
-      analysis = await analyzeImage(attachedFile, desc);
-    } catch (e) {
-      console.warn('[K-Cleaner] 분석 실패:', e.message);
-      setSubmitting(false);
-      alert('사진 분석에 실패했습니다(' + e.message + '). 잠시 후 다시 시도해주세요.');
-      return;
+async function _openaiAnalyzeGeneral(imageFile) {
+  console.log('[Gemini General] 범용 분석 시작');
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(imageFile);
+  });
+  const mime = imageFile.type || 'image/jpeg';
+  const systemPrompt =
+    '당신은 이미지 분석 전문가다. 사진을 보고 아래 JSON 형식으로만 출력하라. JSON 외 텍스트 금지.\n' +
+    '{\n' +
+    '  "scene_type": "사진 유형 (실내/실외/사람/사물/문서/기타)",\n' +
+    '  "main_subject": "주요 피사체 한국어 설명",\n' +
+    '  "objects_detected": ["감지된 주요 물체 목록"],\n' +
+    '  "condition": "상태 설명 (양호/불량/위험/정상 등)",\n' +
+    '  "estimated_issue": "추정되는 문제나 상황 한국어 설명",\n' +
+    '  "urgency": "낮음|보통|높음|긴급",\n' +
+    '  "recommended_action": "권고 조치 1~2문장",\n' +
+    '  "scene_description": "전체 상황 객관적 설명 2~3문장"\n' +
+    '}';
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ parts: [
+      { inline_data: { mime_type: mime, data: base64 } },
+      { text: '이 이미지를 분석하여 지정된 JSON 형식으로만 출력하라.' }
+    ]}],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 512 }
+  };
+  const data = await _openaiFetch(body);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+  result._sp_code    = 'SP-00-GEN';
+  result.risk_level  = { '낮음':'S0','보통':'S1','높음':'S2','긴급':'S3' }[result.urgency] || 'S0';
+  result.image_quality = 'GOOD';
+  result.confidence    = 0.75;
+  return result;
+}
+
+async function _deepseekReport(geminiJson, category, desc, gps, address, spCode) {
+  // SP-00-GEN: 범용 처리 — K-Cleaner 대신 일반 AI 비서 역할
+  const isGeneral = (!spCode || spCode === 'SP-00-GEN');
+  let systemPrompt;
+  const _reportMap = {
+    'SP-14-IMG': 'cln',
+    'SP-15-IMG': 'sp15_cln',
+    'SP-16-IMG': 'sp16_cln',
+    'SP-17-IMG': 'sp17_cln',
+    'SP-18-IMG': 'sp18_cln',
+  };
+  if (isGeneral) {
+    systemPrompt = `당신은 친절한 AI 비서다. 사용자의 신고·요청을 분석하여 명확하고 실용적인 답변을 제공한다. 한국어로 답하라.`;
+  } else {
+    systemPrompt = await _loadPrompt(_reportMap[spCode] || 'cln');
+  }
+
+  // SP-00-GEN: 범용 메시지 구성
+  const costNote = (!isGeneral && geminiJson.cost_estimate)
+    ? `\n비용산출: 수거비 ₩${(geminiJson.cost_estimate.collection_fee||0).toLocaleString()} + 처리비 ₩${(geminiJson.cost_estimate.disposal_fee||0).toLocaleString()} = 합계 ₩${(geminiJson.cost_estimate.total_est||0).toLocaleString()}\n필요차량: ${geminiJson.truck_required||'미상'} / 작업자: ${geminiJson.workers_required||'미상'}명`
+    : '';
+
+  const userMsg = isGeneral
+    ? `[이미지 분석 결과 — SP-00-GEN 범용]\n` +
+      `사진 유형: ${geminiJson.scene_type||'미상'}\n` +
+      `주요 피사체: ${geminiJson.main_subject||'미상'}\n` +
+      `감지 물체: ${(geminiJson.objects_detected||[]).join(', ')||'없음'}\n` +
+      `추정 상황: ${geminiJson.estimated_issue||'없음'}\n` +
+      `권고 조치: ${geminiJson.recommended_action||'없음'}\n` +
+      `전체 설명: ${geminiJson.scene_description||'없음'}\n\n` +
+      `신고 유형: ${category||'미선택'}\n` +
+      `사용자 설명: ${desc||'없음'}\n` +
+      `위치: ${address||gps||'없음'}\n\n` +
+      `위 분석을 바탕으로 사용자의 요청을 이해하고 적절한 안내를 제공하라.\n` +
+      `출력 형식: {"summary":"사용자 요청 이해 및 상황 요약 2~3문장","actions":["권고 조치 1","권고 조치 2","권고 조치 3"]}`
+    : `[이미지 분석 결과 — ${spCode||'SP-14-IMG'}-v1.0]\n` +
+      JSON.stringify(geminiJson, null, 2) +
+      `\n\n신고 유형: ${category}\n` +
+      `사용자 설명: ${desc || '없음'}\n` +
+      `GPS: ${gps || '없음'}\n` +
+      `주소: ${address || '없음'}` +
+      costNote +
+      `\n\n위 Gemini 이미지 분석 데이터를 바탕으로 아래 JSON 형식으로만 출력하라. JSON 외 텍스트 금지.\n` +
+      `{\n` +
+      `  "summary": "현장 상황 요약 2~3문장",\n` +
+      `  "actions": ["권고 조치 1", "권고 조치 2", "권고 조치 3", "권고 조치 4"],\n` +
+      `  "materials": [{"name":"성분명","pct":비율숫자,"weight_kg":중량숫자}],\n` +
+      `  "cost": {\n` +
+      `    "collection_fee": 수거인건비숫자,\n` +
+      `    "disposal_fee": 처리비숫자,\n` +
+      `    "vehicle_fee": 차량비숫자,\n` +
+      `    "total_est": 합계숫자\n` +
+      `  },\n` +
+      `  "truck_required": "차량종류",\n` +
+      `  "workers_required": 인원숫자,\n` +
+      `  "risk_level": "S0|S1|S2|S3",\n` +
+      `  "scale": "XS|S|M|L|XL"\n` +
+      `}\n` +
+      `비용은 제주특별자치도 기준: 수거 인건비 20,000원/인/시간, 1톤 트럭 50,000원, 처리비 200원/kg(일반)/1,000원/kg(유해). materials 비율 합계는 반드시 100.`;
+  const data = await _deepseekFetch({
+    model: 'deepseek-chat',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userMsg },
+    ],
+    max_tokens: 1500,
+    temperature: 0.3,
+  });
+  const text = data.choices?.[0]?.message?.content || '{}';
+  try {
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch {
+    return { summary: text.slice(0, 200), actions: [] };
+  }
+}
+
+// ── Supabase reports 저장 ────────────────────────
+async function _saveReport(payload) {
+  const rows = await _sbFetch('reports', 'POST', payload);
+  return rows?.[0];
+}
+
+// ── Supabase Storage 이미지 업로드 ──────────────
+async function _uploadImage(file, reportId) {
+  if (!file) return null;
+  try {
+    const _mimeExt = {'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png',
+      'image/webp':'webp','image/heic':'jpg','image/heif':'jpg','image/gif':'gif'};
+    const ext = _mimeExt[file.type] || (file.name.includes('.') ? file.name.split('.').pop() : 'jpg');
+    const path = `reports/${reportId}.${ext}`;
+    const res  = await fetch(
+      `${SB_URL}/storage/v1/object/report-images/${path}`,
+      {
+        method:  'POST',
+        headers: {
+          'apikey':        SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Content-Type':  file.type || 'image/jpeg',
+          'x-upsert':      'false',
+        },
+        body: file,
+      }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn('[Storage] 업로드 실패:', res.status, err);
+      return null;
+    }
+    // 공개 URL 반환
+    return `${SB_URL}/storage/v1/object/public/report-images/${path}`;
+  } catch(e) {
+    console.warn('[Storage] 업로드 오류:', e.message);
+    return null;
+  }
+}
+
+// ── 카카오 역지오코딩 → Worker 프록시 ───────────────
+async function _reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `${PROXY_URL}/geocode?lat=${lat}&lng=${lng}`
+    );
+    const data = await res.json();
+    return data.documents?.[0]?.road_address?.address_name
+        || data.documents?.[0]?.address?.address_name
+        || null;
+  } catch { return null; }
+}
+
+// ══════════════════════════════════════════════════
+// 앱 상태
+// ══════════════════════════════════════════════════
+let currentScreen  = 'screen-home';
+let previousScreen = 'screen-home';
+let photoDataUrl   = null;
+let photoFile      = null;
+let gpsCoords      = null;
+let gpsAddress     = null;
+
+// ── 내비게이션 ───────────────────────────────────
+function goScreen(id, category) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (!next) return;
+  prev.classList.add('slide-out');
+  next.classList.remove('hidden');
+  next.classList.remove('slide-out');
+  previousScreen = currentScreen;
+  currentScreen = id;
+  if (category && id === 'screen-report') {
+    setTimeout(() => {
+      const sel = document.getElementById('categorySelect');
+      if (sel) sel.value = category;
+    }, 100);
+  }
+  setTimeout(() => prev.classList.add('hidden'), 350);
+}
+function goBack() {
+  goScreen(previousScreen === currentScreen ? 'screen-home' : previousScreen);
+}
+
+// ── GPS ──────────────────────────────────────────
+function initGPS() {
+      // 고팡에서 GPS 주소 전달받은 경우 즉시 사용 (iframe GPS 재요청 불필요)
+      const _up = new URLSearchParams(location.search);
+      const _ga = _up.get("gps_addr");
+      if (_ga) {
+        gpsAddress = decodeURIComponent(_ga);
+            // GPS ?? ?? (??: "...GPS(lat, lng)...")
+            const _gm = gpsAddress.match(/GPS\(([\d.]+),\s*([\d.]+)\)/);
+            if (_gm) gpsCoords = { lat: _gm[1], lng: _gm[2] };
+            else gpsCoords = { lat: "0", lng: "0" };
+        const gpsEl = document.getElementById("gpsVal");
+        const gpsSpEl = document.getElementById("gpsSpinner");
+        if (gpsEl) gpsEl.textContent = gpsAddress;
+        if (gpsSpEl) gpsSpEl.style.display = "none";
+        return;
+      }
+  if (!navigator.geolocation) {
+    document.getElementById('gpsVal').textContent = 'GPS 미지원 기기';
+    return;
+  }
+  // 페이지 로드 시 즉시 자동 감지
+  _startGPS();
+}
+
+function _startGPS() {
+  if (new URLSearchParams(location.search).get("gps_addr")) return;
+  document.getElementById('gpsSpinner').style.display = 'block';
+  document.getElementById('gpsVal').textContent = '위치 확인 중…';
+
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude.toFixed(6);
+    const lng = pos.coords.longitude.toFixed(6);
+    gpsCoords = { lat, lng };
+    document.getElementById('gpsSpinner').style.display = 'none';
+    document.getElementById('gpsBar').style.background = 'var(--accent-light)';
+
+    // 즉시 좌표 표시 후 주소로 교체
+    document.getElementById('gpsVal').textContent = '주소 변환 중…';
+    gpsAddress = await _reverseGeocode(lat, lng);
+
+    if (gpsAddress) {
+      // 주소만 표시 (좌표 숨김)
+      document.getElementById('gpsVal').textContent = gpsAddress;
+    } else {
+      // 주소 변환 실패 시 좌표 표시
+      document.getElementById('gpsVal').textContent = `${lat}, ${lng}`;
     }
 
-    const locSummary = resolvedLocation
-      ? (resolvedLocation.address || `${resolvedLocation.lat?.toFixed(5)}, ${resolvedLocation.lng?.toFixed(5)}`)
-      : '위치 미확인';
+    // watchPosition으로 위치 변화 감지
+    navigator.geolocation.watchPosition(async updated => {
+      const la = updated.coords.latitude.toFixed(6);
+      const ln = updated.coords.longitude.toFixed(6);
+      // 이전 위치와 크게 다를 때만 업데이트 (50m 이상)
+      const dist = Math.abs(la - lat) + Math.abs(ln - lng);
+      if (dist > 0.0005) {
+        gpsCoords = { lat: la, lng: ln };
+        document.getElementById('gpsVal').textContent = '주소 업데이트 중…';
+        gpsAddress = await _reverseGeocode(la, ln);
+        document.getElementById('gpsVal').textContent = gpsAddress || `${la}, ${ln}`;
+      }
+    }, null, { enableHighAccuracy: true, maximumAge: 30000 });
 
-    resultBox.style.display = 'block';
-    resultBox.textContent =
-      `분석 신뢰도: ${Math.round((analysis.confidence || 0) * 100)}%\n` +
-      `규모: ${analysis.scale || '?'} / 지형: ${analysis.terrain || '?'} / 위험도: ${analysis.risk_level || '?'}\n` +
-      `추정 중량: ${analysis.total_weight_kg_est ?? '?'}kg\n` +
-      `현장 설명: ${analysis.scene_description || '-'}\n` +
-      `위치: ${locSummary}`;
+  }, (err) => {
+    document.getElementById('gpsSpinner').style.display = 'none';
+    gpsCoords = null;
+    gpsAddress = null;
 
-    setSubmitting(true, '신고 접수 중…');
+    let msg = '위치 확인 실패';
+    if (err.code === 1) msg = '위치 권한이 거부됐습니다. 설정에서 허용해 주세요.';
+    else if (err.code === 2) msg = 'GPS 신호를 찾을 수 없습니다.';
+    else if (err.code === 3) msg = 'GPS 시간 초과. 다시 시도합니다.';
 
-    const summary = `[${reportType}] ${analysis.scale || ''} 규모 환경 신고 접수 — ${locSummary}`;
+    document.getElementById('gpsVal').textContent = msg;
+    document.getElementById('gpsBar').style.background = 'var(--orange-bg,#fef3c7)';
+    document.getElementById('gpsBar').style.cursor = 'pointer';
+    document.getElementById('gpsBar').title = '탭하여 재시도';
+    document.getElementById('gpsBar').onclick = () => { _startGPS(); };
 
-    // 대화창 쪽에도 결과를 알리고(GWP_MESSAGE), 접수 완료를 보고한다(GWP_DONE)
-    postToOpener({ role: 'ai', text: summary });
-    postDone({
-      summary,
-      reporter_svc: 'fiil-kcleaner',
-      pdvData: {
-        who: null, when: new Date().toISOString(), where: locSummary,
-        what: summary, how: 'clean_hondi_net_webapp', why: desc || null,
+  }, { timeout: 10000, maximumAge: 0, enableHighAccuracy: true });
+}
+
+function requestGPS() { _startGPS(); }
+
+// ── 사진 처리 ────────────────────────────────────
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  photoFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoDataUrl = e.target.result;
+    document.getElementById('previewImg').src = photoDataUrl;
+    document.getElementById('previewImg').style.display = 'block';
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('uploadOverlay').style.display = 'flex';
+    document.getElementById('uploadZone').classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+function clearPhoto() {
+  photoDataUrl = null; photoFile = null;
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('previewImg').src = '';
+  document.getElementById('uploadPrompt').style.display = 'flex';
+  document.getElementById('uploadOverlay').style.display = 'none';
+  document.getElementById('uploadZone').classList.remove('has-image');
+  document.getElementById('photoInput').value = '';
+}
+
+// ── 신고 제출 ────────────────────────────────────
+function submitReport() {
+  const sel = document.getElementById('categorySelect');
+  if (!sel.value) sel.value = '기타';
+  const cat = sel.value;
+  if (!gpsCoords) {
+    alert('위치 정보가 필요합니다.\n상단 GPS 바를 탭하여 위치를 허용해 주세요.');
+    return;
+  }
+  goScreen('screen-analysis');
+  runAIAnalysis(cat);
+}
+
+async function runAIAnalysis(category) {
+  // 분석 화면 사진 표시
+  const apic = document.getElementById('analysisPic');
+  if (photoDataUrl) {
+    apic.innerHTML = `<img src="${photoDataUrl}" style="width:100%;height:100%;object-fit:cover;">
+      <div class="analysis-photo-overlay"><div class="analysis-photo-label">🔍 AI 스캔 중</div></div>`;
+  }
+
+  const desc = document.getElementById('descInput')?.value || '';
+  const gps  = gpsCoords ? `${gpsCoords.lat}, ${gpsCoords.lng}` : null;
+
+  // 단계별 UI 업데이트
+  const setStep = (n, done=false) => {
+    for (let i=1; i<=5; i++) {
+      const dot = document.getElementById(`dot${i}`);
+      const sp  = document.getElementById(`sp${i}`);
+      const ck  = document.getElementById(`ck${i}`);
+      if (!dot) continue;
+      if (i < n)      { dot.className='ai-step-dot done'; sp.style.display='none'; ck.style.display='block'; }
+      else if (i===n) { dot.className='ai-step-dot active'; sp.style.display='block'; ck.style.display='none'; }
+      else            { dot.className='ai-step-dot'; sp.style.display='none'; ck.style.display='none'; }
+      document.getElementById(`step${i}`)?.classList.add('visible');
+    }
+  };
+
+  let geminiResult = null;
+  let reportData   = null;
+  let spCode       = 'SP-14-IMG';  // 기본값
+
+  try {
+    // 1단계: GPS + 역지오코딩 (아직 주소 없으면 재시도)
+    setStep(1);
+    console.log('[분석 시작] photoFile:', photoFile?.name, 'gps:', gps, 'gpsAddress:', gpsAddress, 'category:', category);
+    if (gps && !gpsAddress) {
+      console.log('[역지오코딩] 재시도 중...');
+      const p = gps.replace(/\s/g,'').split(',');
+      if (p.length >= 2) {
+        gpsAddress = await _reverseGeocode(p[0], p[1]);
+        console.log('[역지오코딩] 결과:', gpsAddress);
+        if (gpsAddress) {
+          const el = document.getElementById('gpsVal');
+          if (el) el.textContent = gpsAddress + ` (${gps})`;
+        }
+      }
+    }
+    await new Promise(r => setTimeout(r, 400));
+    setStep(2);
+
+    // 2단계: SP 라우터 → 어떤 SP를 쓸지 결정
+    if (photoFile) {
+      try {
+        console.log('[SP-ROUTER] 라우팅 시작...');
+        const route = await _openaiRoute(photoFile, category, desc);
+        spCode = route.sp_code || 'SP-14-IMG';
+        console.log('[SP-ROUTER] 결정:', spCode, '신뢰도:', route.confidence);
+        if (route.urgent) {
+          appendBubble?.('ai', '🚨 응급 상황이 감지되었습니다. 즉각 대응팀이 출동합니다.');
+        }
+      } catch(e) {
+        console.warn('[SP-ROUTER] 실패, SP-14-IMG 기본 사용:', e.message);
+      }
+    } else {
+      console.warn('[SP-ROUTER] photoFile 없음 → 라우팅 건너뜀');
+      spCode = 'SP-00-GEN';
+    }
+    setStep(3);
+
+    // 3단계: Gemini Vision 분석
+    if (photoFile) {
+      try {
+        console.log('[OpenAI] 분석 시작, SP:', spCode);
+        geminiResult = await _openaiAnalyze(photoFile, spCode);
+        console.log('[OpenAI] 분석 완료:', JSON.stringify(geminiResult).slice(0,200));
+      } catch(e) {
+        console.error('[OpenAI] 분석 실패:', e.message);
+        // Vision 분석 실패해도 계속 진행
+      }
+    }
+    setStep(4);
+
+    // 4단계: DeepSeek 신고서 생성
+    // geminiResult 없어도 기본 정보로 신고서 생성
+    try {
+      const analysisInput = geminiResult || {
+        scene_description: `${category} 신고. 사진 분석 불가.`,
+        risk_level: 'S1',
+      };
+      console.log('[DeepSeek] 신고서 생성 시작, SP:', spCode);
+      reportData = await _deepseekReport(analysisInput, category, desc, gps, gpsAddress, spCode);
+      console.log('[DeepSeek] 신고서 완료:', JSON.stringify(reportData).slice(0,200));
+    } catch(e) {
+      console.error('[DeepSeek] 신고서 생성 실패:', e.message);
+      reportData = { summary: `${category} 신고가 접수되었습니다.`, actions: ['담당 부서 배정', '현장 확인 출동'] };
+    }
+    setStep(5);
+
+    // 5단계: 이미지 업로드 + Supabase 저장
+    const reportId = 'RPT-2026-' + (Math.floor(Math.random()*9000)+1000);
+    const urgencyMap = {S0:'낮음', S1:'보통', S2:'높음', S3:'긴급'};
+    const now = _nowKST();
+
+    // 이미지 Storage 업로드
+    console.log('[Storage] 이미지 업로드 시작...');
+    const imageUrl = await _uploadImage(photoFile, reportId);
+    console.log('[Storage] image_url:', imageUrl);
+
+    // 비용 계산 (SP-14/SP-15 gemini 결과에서 추출)
+    const costData = reportData?.cost || geminiResult?.cost_estimate || null;
+    const costTotal = costData?.total_est || costData?.total || 0;
+
+    const payload = {
+      id:          reportId,
+      type:        category,
+      type_code:   spCode,
+      location:    gpsAddress || (gps ? gps : '위치 미상'),
+      gps:         gps,
+      reporter:    (window.__hondiProfile && (window.__hondiProfile.name || window.__hondiProfile.phone))
+                     || localStorage.getItem('gopang_token') || null,
+      reported_at: now,
+      urgency:     urgencyMap[geminiResult?.risk_level] || '보통',
+      status:      '접수',
+      image_url:   imageUrl,
+      cost: (reportData?.cost || costData) ? {
+        labor:     reportData?.cost?.collection_fee || costData?.collection_fee || 0,
+        equipment: reportData?.cost?.disposal_fee   || costData?.disposal_fee   || 0,
+        vehicle:   reportData?.cost?.vehicle_fee    || 0,
+        total:     reportData?.cost?.total_est      || costData?.total_est      || costTotal || 0,
+        currency:  'KRW',
+      } : null,
+      dispatch: (geminiResult?.truck_required || geminiResult?.workers_required) ? {
+        vehicle:   geminiResult?.truck_required || null,
+        personnel: geminiResult?.workers_required || null,
+        team:      null,
+        dispatchedAt: null,
+      } : null,
+      analysis: {
+        sp_code:      spCode,
+        summary:      reportData?.summary || geminiResult?.scene_description || '',
+        actions:      reportData?.actions || [],
+        gemini:       geminiResult,
+        image_quality: geminiResult?.image_quality,
+        scale:        reportData?.scale || geminiResult?.scale || geminiResult?.location_type,
+        risk_level:   reportData?.risk_level || geminiResult?.risk_level,
+        total_weight: geminiResult?.total_weight_kg_est,
+        materials:    reportData?.materials || geminiResult?.components || geminiResult?.items || null,
+        cost:         reportData?.cost || costData,
+        truck:        reportData?.truck_required || geminiResult?.truck_required || null,
+        workers:      reportData?.workers_required || geminiResult?.workers_required || null,
+      },
+    };
+
+    console.log('[Supabase] 저장 시작:', reportId);
+    try {
+      await _saveReport(payload);
+      console.log('[Supabase] 저장 완료:', reportId, '| image_url:', imageUrl);
+    } catch(e) {
+      console.warn('[Supabase] 저장 실패:', e.message);
+    }
+
+    setStep(5);
+    await new Promise(r => setTimeout(r, 600));
+
+    // 결과 화면
+    showResult(category, reportId, geminiResult, reportData, gpsAddress || gps);
+
+  } catch(e) {
+    console.error('[분석 오류]', e);
+    // 오류 시에도 기본 정보로 Supabase 저장
+    const reportId = 'RPT-2026-' + (Math.floor(Math.random()*9000)+1000);
+    const fallbackPayload = {
+      id:          reportId,
+      type:        category,
+      type_code:   'SP-00-GEN',
+      location:    gpsAddress || null,
+      gps:         gps,
+      reporter:    (window.__hondiProfile && (window.__hondiProfile.name || window.__hondiProfile.phone))
+                     || localStorage.getItem('gopang_token') || null,
+      reported_at: _nowKST(),
+      urgency:     '보통',
+      status:      '접수',
+      analysis:    { summary: '분석 오류 발생', error: e.message },
+    };
+    _saveReport(fallbackPayload).catch(se => console.warn('[Supabase fallback 저장 실패]', se.message));
+    showResult(category, reportId, null, null, gpsAddress || gps);
+  }
+}
+
+// ── 결과 화면 렌더링 ─────────────────────────────
+const analysisDB = {
+  '응급환자':  { urgency:'🔴 최고 긴급', actions:['119 구급대 즉시 출동 요청','주변 AED 위치 안내','응급처치 가이드 SMS 전송','보호자 연락처 확인'] },
+  '해안쓰레기':{ urgency:'🟡 보통',     actions:['해양환경팀 수거팀 출동 (3명)','고무보트 1척 배정','처리 보고서 자동 생성','블록체인 기록 저장'] },
+  '불법투기':  { urgency:'🟠 높음',     actions:['환경과 단속팀 출동','CCTV 분석 및 차량 추적','폐기물 수거팀 배정','과태료 부과 처리'] },
+  '식당위생':  { urgency:'🟡 보통',     actions:['식품위생 담당자 점검','위생 점검표 자동 작성','처리 결과 공개 등록','재발 시 영업정지 경고'] },
+  '도로파손':  { urgency:'🟠 높음',     actions:['도로과 긴급보수팀 출동','임시 안전표지 설치','아스팔트 보수 배정','우회 안내 문자 발송'] },
+  '산불연기':  { urgency:'🔴 최고 긴급', actions:['119 소방 즉시 출동','산림청 동시 신고','인근 주민 대피 안내','헬기 출동 검토'] },
+  '수질오염':  { urgency:'🟠 높음',     actions:['수질오염 대응팀 출동','현장 수질 샘플 채취','오염원 역추적 조사','취수장 모니터링 강화'] },
+  '소음진동':  { urgency:'🟢 낮음',     actions:['소음 측정팀 파견','소음 데시벨 측정','민원인 처리 결과 통보','기준 초과 시 시정명령'] },
+  '기타':      { urgency:'🟡 보통',     actions:['담당 부서 자동 배정','현장 점검팀 출동','처리 결과 48시간 내 통보','블록체인 기록 저장'] },
+};
+
+function showResult(category, reportId, gemini, report, location) {
+  goScreen('screen-result');
+  const db = analysisDB[category] || analysisDB['기타'];
+
+  document.getElementById('resultCode').textContent = reportId || 'RPT-2026-????';
+  document.getElementById('resType').textContent    = category;
+  document.getElementById('resTime').textContent    = new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
+  document.getElementById('resUrgency').textContent =
+    gemini ? { S0:'🟢 낮음', S1:'🟡 보통', S2:'🟠 높음', S3:'🔴 긴급' }[gemini.risk_level] || db.urgency
+           : db.urgency;
+
+  if (gpsCoords) {
+    document.getElementById('resGps').textContent = `${gpsCoords.lat}, ${gpsCoords.lng}`;
+  }
+  document.getElementById('resLoc').textContent = location || '위치 미상';
+
+  // AI 분석 결과 — DeepSeek 요약 우선, 없으면 Gemini scene_description
+  document.getElementById('aiAnalysisText').textContent =
+    report?.summary || gemini?.scene_description ||
+    (analysisDB[category] ? `${category} 신고가 접수되었습니다. 담당팀이 배정됩니다.` : '분석 완료');
+
+  // 권고 조치 — DeepSeek actions 우선
+  const actions = (report?.actions?.length > 0) ? report.actions : db.actions;
+  const al = document.getElementById('actionList');
+  al.innerHTML = '';
+  actions.forEach((a, i) => {
+    al.innerHTML += `<div class="action-item"><div class="action-num">${i+1}</div><div class="action-text">${a}</div></div>`;
+  });
+
+  // ── GWP: 고팡 위젯 모드일 때 6하 원칙 보고 후 복귀 ──
+  if (GopangWidget.isWidget) {
+    const urgencyText = document.getElementById('resUrgency')?.textContent || '보통';
+    const gpsText     = document.getElementById('resGps')?.textContent || null;
+    const locText     = document.getElementById('resLoc')?.textContent || null;
+    const summary     = `${category} 신고 완료 (${reportId})`;
+    const howStr      = document.getElementById('photoInput')?.files?.length > 0
+                        ? 'image' : 'text';
+
+    setTimeout(() => {
+      window.__gwpInstance?.done({
+        summary: summary,
+        pdvData: {
+          when:  new Date().toISOString(),
+          where: gpsText ? `GPS:${gpsText}${locText ? ' ' + locText : ''}` : locText,
+          what:  summary,
+          how:   howStr,
+          why:   `${category} 신고 — 담당 기관 처리 요청`,
+          data:  { reportId, category, urgency: urgencyText, location: locText, gps: gpsText },
+        },
+      });
+    }, 3000);  // 결과 화면 3초 표시 후 고팡 복귀
+  }
+}
+
+// ── Supabase → 내 신고 현황 화면 ─────────────────
+async function _loadStatusScreen() {
+  const body = document.querySelector('#screen-status .status-body');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">불러오는 중…</div>';
+  try {
+    const rows = await _sbFetch(
+      'reports?select=id,type,location,reported_at,urgency,status&order=reported_at.desc&limit=10'
+    );
+    if (!rows.length) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">신고 내역이 없습니다.</div>';
+      return;
+    }
+    const badgeClass = { '접수':'badge-new', '처리중':'badge-active', '완료':'badge-done' };
+    const typeIcon = (t='') =>
+      t.includes('해안')||t.includes('해양') ? '🏖️' :
+      t.includes('불법') ? '🗑️' : t.includes('응급') ? '🚨' :
+      t.includes('도로') ? '🚧' : t.includes('산불') ? '🔥' : '📋';
+    body.innerHTML = rows.map(r => {
+      const st   = r.status || '접수';
+      const bc   = badgeClass[st] || 'badge-new';
+      const date = r.reported_at ? new Date(r.reported_at).toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'}) : '';
+      const prog = st==='완료' ? 100 : st==='처리중' ? 60 : 20;
+      return `
+        <div class="status-card" onclick="_openReport('${r.id}')" style="cursor:pointer;">
+          <div class="status-card-top">
+            <div class="status-card-img">${typeIcon(r.type)}</div>
+            <div class="status-card-info">
+              <div class="status-card-title">${r.type||'신고'}</div>
+              <div class="status-card-meta">${r.id} · ${date}</div>
+            </div>
+            <span class="recent-badge ${bc}">${st}</span>
+          </div>
+          <div class="status-track"><div class="track-steps">
+            <div class="track-progress-line" style="width:${prog}%"></div>
+            <div class="track-step"><div class="track-dot ${prog>=20?'done':'pending'}">${prog>=20?'✓':'·'}</div><div class="track-label">접수</div></div>
+            <div class="track-step"><div class="track-dot ${prog>=40?'done':'pending'}">${prog>=40?'✓':'·'}</div><div class="track-label">분류</div></div>
+            <div class="track-step"><div class="track-dot ${prog>=60?(prog>60?'done':'active'):'pending'}">${prog>=60?(prog>60?'✓':'🚗'):'·'}</div><div class="track-label">출동</div></div>
+            <div class="track-step"><div class="track-dot ${prog>=80?'done':'pending'}">${prog>=80?'✓':'·'}</div><div class="track-label">처리</div></div>
+            <div class="track-step"><div class="track-dot ${prog>=100?'done':'pending'}">${prog>=100?'✓':'·'}</div><div class="track-label">완료</div></div>
+          </div></div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">불러오기 실패<br><small>${e.message}</small></div>`;
+  }
+}
+
+async function _openReport(id) {
+  try {
+    const rows = await _sbFetch(`reports?id=eq.${encodeURIComponent(id)}&limit=1`);
+    if (!rows[0]) return;
+    const r = rows[0];
+    const a = r.analysis || {};
+    showResult(r.type, r.id, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
+    document.getElementById('resTime').textContent =
+      r.reported_at ? new Date(r.reported_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
+    document.getElementById('resGps').textContent = r.gps || '—';
+  } catch(e) { alert('신고 데이터를 불러올 수 없습니다.'); }
+}
+
+// ── URL 파라미터 처리 (gopang.net → fiil.kr 링크) ─
+async function _handleUrlParams() {
+  const params   = new URLSearchParams(location.search);
+  const reportId = params.get('id');
+  if (!reportId) return false;
+  try {
+    const rows = await _sbFetch(`reports?id=eq.${encodeURIComponent(reportId)}&limit=1`);
+    if (rows[0]) {
+      const r = rows[0];
+      const a = r.analysis || {};
+      showResult(r.type, r.id, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
+      document.getElementById('resTime').textContent =
+        r.reported_at ? new Date(r.reported_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
+      document.getElementById('resGps').textContent = r.gps || '—';
+      return true;
+    }
+  } catch(e) { console.warn('신고 조회 실패:', e.message); }
+  return false;
+}
+
+// ── Init ──────────────────────────────────────────
+window.addEventListener('load', async () => {
+  initGPS();
+  if (typeof initPhone === 'function') initPhone();
+  _checkLLMConfig(); // DeepSeek 폴백 키 미설정 여부만 콘솔에 기록(배너 없음)
+  _initHondiProfile(); // 더미("김제주") 대신 실사용자 이름/전화로 교체
+  console.log('[초기화] API 프록시:', PROXY_URL);
+  await _handleUrlParams();
+
+  // ── GWP: 고팡 위젯 모드 초기화 (gwp-sdk.js v2.0) ─────
+  if (GopangWidget.isWidget) {
+    const gwp = new GopangWidget({
+      onInit({ token, context, gpsAddr, photoUrl, desc }) {
+        // 2026-09-22: 이전에는 여기서 token(혼디 guid)을 그대로
+        // 'gopang_phone'에 저장해 전화번호처럼 오용했다(신고자 필드에
+        // GUID가 그대로 찍히던 원인). 이제 _initHondiProfile()이 이미
+        // 'gopang_token'에 저장하고 실프로필을 조회해두므로 여기선
+        // 중복 저장하지 않는다.
+        console.log('[GWP] onInit — context:', context, '/ gpsAddr:', gpsAddr);
+
+        // photo_url → photoInput에 주입 후 신고 화면으로 자동 이동
+        if (photoUrl) {
+          fetch(photoUrl)
+            .then(r => r.blob())
+            .then(blob => {
+              const reader = new FileReader();
+              reader.onload = e => {
+                photoDataUrl = e.target.result;
+              // photoFile도 세팅 — AI 분석(Gemini/DeepSeek)이 photoFile 기준으로 동작
+              photoFile = new File([blob], 'gopang-photo.jpg', { type: 'image/jpeg' });
+                const previewEl = document.getElementById('previewImg');
+                const promptEl  = document.getElementById('uploadPrompt');
+                const overlayEl = document.getElementById('uploadOverlay');
+                const zoneEl    = document.getElementById('uploadZone');
+                if (previewEl) { previewEl.src = photoDataUrl; previewEl.style.display = 'block'; }
+                if (promptEl)  promptEl.style.display  = 'none';
+                if (overlayEl) overlayEl.style.display = 'flex';
+                if (zoneEl)    zoneEl.classList.add('has-image');
+                if (!gpsCoords) gpsCoords = { lat: '0', lng: '0' };
+                if (desc) {
+                  const descEl = document.getElementById('descInput');
+                  if (descEl) descEl.value = desc;
+                }
+                setTimeout(() => {
+                  goScreen('screen-report');
+                  setTimeout(() => submitReport(), 500);
+                }, 300);
+              };
+              reader.readAsDataURL(blob);
+            })
+            .catch(err => {
+              console.warn('[GWP] 사진 로드 실패:', err);
+              if (desc) {
+                const descEl = document.getElementById('descInput');
+                if (descEl) descEl.value = desc;
+              }
+              setTimeout(() => goScreen('screen-report'), 300);
+            });
+        } else {
+          if (desc) {
+            const descEl = document.getElementById('descInput');
+            if (descEl) descEl.value = desc;
+          }
+          setTimeout(() => goScreen('screen-report'), 500);
+        }
+      },
+
+      onInput(text, file) {
+        // 고팡 입력창 → fiil 신고 화면으로 연결
+        if (file instanceof File) {
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          const photoInput = document.getElementById('photoInput');
+          if (photoInput) {
+            photoInput.files = dt.files;
+            photoInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        if (text) {
+          const descEl = document.getElementById('descInput');
+          if (descEl) descEl.value = text;
+        }
       },
     });
 
-    setSubmitting(false, '접수 완료 ✅');
-    setTimeout(() => setSubmitting(false), 1800);
-  });
+    window.__gwpInstance = gwp;
 
-  loadRealProfile();
-})();
+    // 준비 완료 신호 (onInit 내부에서 화면 이동이 시작됨)
+    gwp.ready({
+      title:       'K-Cleaner',
+      placeholder: '📷 카메라로 현장 사진을 찍어 전송하세요',
+      accept:      'image/*',
+      showCamera:  true,
+    });
+  }
+});
 </script>
 </body>
 </html>
+
+
+
+
+
+

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIIL.kr — 신고 상세 보고서</title>
+<style>
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendardvariable.css');
+
+/* ── Design tokens (Supabase light) ── */
+:root{
+  --bg:        #fff;
+  --bg-subtle: #f8f9fa;
+  --bg-hover:  #f1f3f5;
+  --bg-sel:    #e8f4fd;
+  --border:    #e5e7eb;
+  --border2:   #d1d5db;
+  --text:      #171717;
+  --text2:     #6b7280;
+  --text3:     #9ca3af;
+  --accent:    #3ecf8e;
+  --accent-d:  #29b978;
+  --blue:      #3b82f6;
+  --red:       #ef4444;
+  --orange:    #f59e0b;
+  --sb-w:      224px;
+  --sb-rail:   48px;
+  --top-h:     48px;
+  --font:      'Pretendard Variable','Pretendard',system-ui,sans-serif;
+  /* legacy aliases for content that still uses old vars */
+  --primary:   #3ecf8e;
+  --primary-dk:#29b978;
+  --primary-bg:#f0fdf9;
+  --surface:   #f8f9fa;
+  --hint:      #9ca3af;
+  --sub:       #6b7280;
+  --r:         4px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);font-size:15px;color:var(--text);background:var(--bg-subtle);-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button{font-family:var(--font);cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:var(--font)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sb-rail);
+  flex-shrink:0;
+  background:var(--bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transition:width .18s ease;
+  z-index:200;
+  position:fixed;top:0;left:0;bottom:0;
+}
+.sidebar:hover{width:var(--sb-w)}
+.sb-brand{
+  padding:0 13px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  height:var(--top-h);overflow:hidden;flex-shrink:0;
+  text-decoration:none;color:inherit;
+}
+.sb-icon{
+  width:26px;height:26px;flex-shrink:0;
+  background:var(--accent);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:#fff;
+}
+.sb-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;opacity:0;transition:opacity .12s .04s}
+.sidebar:hover .sb-name{opacity:1}
+.sb-sub{font-size:12px;color:var(--text2);white-space:nowrap}
+.sb-nav{padding:6px;flex:1;overflow-y:auto;overflow-x:hidden}
+.sb-section{
+  padding:10px 10px 4px;
+  font-size:12px;font-weight:600;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--text3);
+  white-space:nowrap;opacity:0;transition:opacity .1s;
+}
+.sidebar:hover .sb-section{opacity:1}
+.sb-item{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 9px;border-radius:5px;
+  font-size:14px;color:var(--text2);
+  cursor:pointer;transition:background .1s,color .1s;
+  white-space:nowrap;overflow:hidden;
+  text-decoration:none;
+}
+.sb-item:hover{background:var(--bg-hover);color:var(--text)}
+.sb-item.active{background:var(--bg-hover);color:var(--text);font-weight:500}
+.sb-item svg{flex-shrink:0;opacity:.65}
+.sb-item.active svg{opacity:1}
+.sb-label{white-space:nowrap;opacity:0;transition:opacity .1s .04s}
+.sidebar:hover .sb-label{opacity:1}
+.sb-badge{
+  margin-left:auto;
+  background:#f3f4f6;color:var(--text2);
+  font-size:12px;font-weight:600;padding:1px 6px;border-radius:10px;
+  border:1px solid var(--border);
+  opacity:0;transition:opacity .1s;
+}
+.sidebar:hover .sb-badge{opacity:1}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sb-rail);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:var(--top-h);flex-shrink:0;
+  background:var(--bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:10px;
+  position:sticky;top:0;z-index:100;
+}
+.hamburger{
+  display:none;padding:4px;border-radius:4px;color:var(--text2);
+  cursor:pointer;
+}
+.hamburger:hover{background:var(--bg-hover)}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);flex:1}
+.breadcrumb a:hover{color:var(--text)}
+.bc-sep{color:var(--text3)}
+.bc-cur{color:var(--text);font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.sys-ok,.sys-pill{
+  display:flex;align-items:center;gap:5px;
+  font-size:13px;color:var(--text2);
+  padding:3px 8px;border-radius:12px;
+  border:1px solid var(--border);background:var(--bg);
+}
+.sys-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.clock{font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums}
+
+/* ── CONTENT ── */
+.content,.wrap{padding:20px;flex:1}
+
+/* ── CARDS ── */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:14px}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 16px;border-bottom:1px solid var(--border);
+}
+.card-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.3px}
+.card-body{padding:16px}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:16px 18px;
+}
+.stat-val{font-size:18px;font-weight:600;line-height:1;margin-bottom:4px;color:var(--text)}
+.stat-lbl{font-size:14px;color:var(--text2)}
+.stat-sub{font-size:13px;color:var(--text3);margin-top:3px}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:16px 18px;border-top:3px solid var(--accent);
+}
+.kpi-label{font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:500}
+.kpi-value{font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.5px}
+.kpi-sub{font-size:13px;color:var(--text3);margin-top:5px}
+
+/* ── ROW LAYOUTS ── */
+.row-2,.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.row-equal{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-5-7{display:grid;grid-template-columns:5fr 7fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ── TOOLBAR ── */
+.toolbar{
+  height:40px;flex-shrink:0;
+  background:var(--bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+}
+.search-wrap{
+  flex:1;max-width:300px;
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg-subtle);border:1px solid var(--border);
+  border-radius:4px;padding:0 8px;height:28px;
+}
+.search-wrap input{border:none;background:none;font-size:14px;color:var(--text);outline:none;width:100%}
+.search-wrap input::placeholder{color:var(--text3)}
+
+/* ── BUTTONS ── */
+.btn,.tb-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:4px;font-size:14px;font-weight:500;
+  border:1px solid var(--border);background:var(--bg);color:var(--text2);
+  transition:background .1s,border-color .1s;cursor:pointer;
+  font-family:var(--font);
+}
+.btn:hover,.tb-btn:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border2)}
+.btn-primary,.tb-btn-green{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+.btn-primary:hover,.tb-btn-green:hover{background:var(--accent-d);border-color:var(--accent-d);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg-hover)}
+
+/* ── PERIOD BAR ── */
+.period-bar{
+  display:flex;align-items:center;gap:0;margin-bottom:16px;
+  border:1px solid var(--border);border-radius:4px;overflow:hidden;
+  width:fit-content;background:var(--bg);
+}
+.period-btn{
+  padding:6px 16px;font-size:14px;font-weight:500;
+  font-family:var(--font);cursor:pointer;
+  border:none;border-right:1px solid var(--border);
+  background:var(--bg);color:var(--text2);
+  transition:background .12s,color .12s;
+}
+.period-btn:last-child{border-right:none}
+.period-btn:hover{background:var(--bg-hover);color:var(--text)}
+.period-btn.active{background:var(--accent);color:#fff;font-weight:600}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip-green {background:#f0fdf4;color:#16a34a}
+.chip-approved{background:#dcfce7;color:#15803d;font-weight:700}
+.chip-blue  {background:#eff6ff;color:#2563eb}
+.chip-orange{background:#fff7ed;color:#c2410c}
+.chip-red   {background:#fef2f2;color:#dc2626}
+.chip-gray  {background:#f9fafb;color:var(--text2);border:1px solid var(--border)}
+.td-null{color:var(--text3);font-style:italic;font-size:13px}
+
+/* ── TABLES ── */
+.tbl,.fs-tbl,.list-tbl,.mat-table{width:100%;border-collapse:collapse}
+.tbl th,.fs-tbl th,.list-tbl th,.mat-table th{
+  text-align:left;padding:9px 12px;
+  font-size:13px;font-weight:600;color:var(--text2);
+  background:var(--bg-subtle);border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.tbl td,.fs-tbl td,.list-tbl td,.mat-table td{
+  padding:9px 12px;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)
+}
+.tbl tbody tr:hover,.fs-tbl tbody tr:hover,.list-tbl tbody tr:hover{background:var(--bg-hover)}
+.tbl tfoot td,.list-tbl tfoot td{
+  font-weight:600;background:var(--bg-subtle);
+  border-top:1px solid var(--border);border-bottom:none;
+}
+.tbl .amt,.list-tbl .amt,.fs-tbl .amt{text-align:right;font-variant-numeric:tabular-nums}
+.rpt-id{color:var(--blue);font-weight:500}
+.rpt-id:hover{text-decoration:underline}
+
+/* ── FINANCIAL TABLE ROWS ── */
+.r-section td{background:var(--bg-subtle);font-weight:600;font-size:13px;color:var(--text2);letter-spacing:.3px;border-bottom:1px solid var(--border)}
+.r-indent td{padding-left:24px}
+.r-total td{background:var(--accent);color:#fff;font-weight:600}
+.r-total-orange td{background:var(--orange);color:#fff;font-weight:600}
+.r-income td{background:#f0fdf4;color:#15803d;font-weight:600}
+.r-equity td{background:#f0fdf4;color:#15803d;font-weight:600}
+.amt-green{color:#16a34a}
+.amt-orange{color:#c2410c}
+.insight{
+  padding:10px 14px;background:var(--bg-subtle);
+  font-size:13px;color:var(--text2);border-top:1px solid var(--border);
+}
+
+/* ── SETTINGS / FORM ELEMENTS ── */
+.setting-section{margin-bottom:20px}
+.setting-label{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:4px;margin-bottom:6px;background:var(--bg)}
+.setting-row:hover{background:var(--bg-hover)}
+.setting-key{font-size:14px;font-weight:500;color:var(--text)}
+.setting-val{font-size:14px;color:var(--text2);font-family:'JetBrains Mono','Courier New',monospace}
+input[type=text],input[type=number],select,textarea{
+  border:1px solid var(--border);border-radius:4px;padding:6px 10px;
+  font-size:14px;color:var(--text);background:var(--bg);outline:none;width:100%;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(62,207,142,.15)}
+.toggle{
+  position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0;
+}
+.toggle input{opacity:0;width:0;height:0}
+.slider{
+  position:absolute;cursor:pointer;inset:0;background:var(--border2);
+  border-radius:18px;transition:.3s;
+}
+.slider:before{
+  position:absolute;content:'';height:12px;width:12px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.3s;
+}
+.toggle input:checked+.slider{background:var(--accent)}
+.toggle input:checked+.slider:before{transform:translateX(16px)}
+
+/* ── BLOCKCHAIN ── */
+.chain{background:#0f172a;border-radius:6px;padding:16px}
+.chain-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(62,207,142,.15);border:1px solid rgba(62,207,142,.3);color:#a7f3d0;padding:4px 10px;border-radius:10px;font-size:12px;font-weight:700;margin-bottom:12px}
+.chain-row{display:flex;gap:10px;margin-bottom:7px;font-size:13px;font-family:'JetBrains Mono','Courier New',monospace}
+.chain-row:last-child{margin-bottom:0}
+.chain-k{color:#475569;min-width:110px;flex-shrink:0}
+.chain-v{color:#94a3b8;word-break:break-all}
+.chain-hash{color:var(--accent)}
+.chain-ok{color:#a7f3d0}
+
+/* ── REPORT DETAIL ── */
+.rh{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:14px}
+.rh-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.rh-id{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.rh-subtitle{font-size:14px;color:var(--text2);margin-top:3px}
+.rh-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding-top:16px;border-top:1px solid var(--border)}
+.meta-f{display:flex;flex-direction:column;gap:2px}
+.meta-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
+.meta-v{font-size:14px;font-weight:500;color:var(--text)}
+.photo-box{aspect-ratio:16/10;border-radius:6px;overflow:hidden;background:var(--bg-subtle);border:1px solid var(--border);position:relative;display:flex;align-items:center;justify-content:center}
+.photo-box img{width:100%;height:100%;object-fit:cover}
+.photo-tag{position:absolute;top:8px;right:8px;background:rgba(62,207,142,.85);color:#fff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:10px}
+.photo-empty{text-align:center;color:var(--text3);font-size:14px}
+.mat-bar{width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block}
+.mat-fill{height:100%;border-radius:3px;background:var(--accent)}
+.disposal-tag{font-size:12px;padding:1px 7px;border-radius:8px;font-weight:600}
+.d-recycle{background:#f0fdf4;color:#15803d}
+.d-landfill{background:var(--bg-subtle);color:var(--text2)}
+.d-special{background:#fef2f2;color:#dc2626}
+.subtotal-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.subtotal-chip{padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px}
+.cost-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:15px}
+.cost-row:last-child{border-bottom:none;font-weight:600;font-size:16px}
+.cost-lbl{color:var(--text2)}
+.cost-sub{font-size:12px;color:var(--text3);display:block;margin-top:1px}
+.cost-section{background:var(--bg-subtle);border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.cost-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:8px}
+.tl{padding-left:22px;position:relative}
+.tl::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{position:absolute;left:-20px;top:1px;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:8px}
+.tl-dot.done{background:var(--accent);color:#fff;box-shadow:0 0 0 2px var(--bg)}
+.tl-dot.pend{background:var(--border2);box-shadow:0 0 0 2px var(--bg)}
+.tl-time{font-size:12px;color:var(--text3);margin-bottom:1px;font-weight:600}
+.tl-desc{font-size:14px;color:var(--text);line-height:1.5}
+.weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.wx-item{background:var(--bg-subtle);border-radius:6px;padding:10px;text-align:center}
+.wx-icon{font-size:18px;margin-bottom:4px}
+.wx-val{font-size:15px;font-weight:600}
+.wx-lbl{font-size:12px;color:var(--text3);margin-top:1px}
+.gcs-badge{display:flex;align-items:center;gap:10px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:14px}
+.gcs-icon{font-size:18px}
+.gcs-text strong{display:block;font-size:15px;color:var(--text)}
+.gcs-text span{font-size:13px;color:var(--text2)}
+.gcs-pts{margin-left:auto;font-size:18px;font-weight:700;color:var(--accent)}
+
+/* ── LOADING / EMPTY ── */
+.loading{text-align:center;padding:60px;color:var(--text3)}
+.spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px;color:var(--text3);font-size:14px}
+.panel-badge{font-size:12px;color:var(--text2);padding:2px 8px;border:1px solid var(--border);background:var(--bg);border-radius:4px}
+
+/* ── MOBILE OVERLAY ── */
+.hamburger{display:none}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300}
+.sidebar-overlay.show{display:block}
+
+@media(max-width:1100px){
+  .stat-grid,.kpi-grid{grid-template-columns:1fr 1fr !important}
+  .row-2,.panel-row,.grid-5-7,.row-equal{grid-template-columns:1fr !important}
+}
+@media(max-width:768px){
+  .sidebar{
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    width:280px;z-index:400;
+    /* override hover-expand for mobile */
+  }
+  .sidebar:hover{width:280px}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0 !important}
+  .hamburger{
+    display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:4px;
+    color:var(--text2);flex-shrink:0;
+  }
+  .hamburger:hover{background:var(--bg-hover)}
+  .content,.wrap{padding:12px}
+  .stat-grid,.kpi-grid{grid-template-columns:1fr 1fr !important;gap:10px;margin-bottom:12px}
+  .stat-card,.kpi-card{padding:12px}
+  .stat-val,.kpi-value{font-size:16px}
+  .row-2,.row-equal,.panel-row,.grid-2,.grid-3,.grid-5-7{grid-template-columns:1fr !important;gap:10px}
+  .card{margin-bottom:10px}
+  .card-head{padding:9px 12px}
+  .tbl th,.tbl td,.list-tbl th,.list-tbl td,.fs-tbl th,.fs-tbl td{font-size:13px;padding:7px 8px;white-space:nowrap}
+  .weather-grid{grid-template-columns:1fr 1fr !important}
+  .rh-meta{grid-template-columns:1fr 1fr !important}
+  .chip{font-size:12px;padding:2px 7px}
+  .period-bar{flex-wrap:wrap}
+  .topbar{padding:0 10px}
+  #mini-map{height:150px !important}
+  #kakao-map{height:340px !important}
+}
+@media(max-width:400px){
+  .stat-grid,.kpi-grid{grid-template-columns:1fr 1fr !important;gap:8px}
+  .content,.wrap{padding:8px}
+}
+
+</style>
+<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c7160a2d047af2808065d9e1929a66a7&libraries=services">
+// ── 모바일 사이드바 ──────────────────────────────────
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-overlay')?.classList.remove('show');
+}
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>{if(window.innerWidth<=768)closeSidebar();}));
+
+</script>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <a href="dashboard.html" class="sb-brand">
+    <div class="sb-icon">F</div>
+    <div class="sb-name">FIIL.kr<div class="sb-sub" style="font-size:12px;font-weight:400">관리자 대시보드</div></div>
+  </a>
+  <nav class="sb-nav">
+    <div class="sb-section">운영 현황</div>
+    <a class="sb-item " href="dashboard.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="sb-label">종합 대시보드</span>
+    </a>
+    <a class="sb-item " href="dashboard.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="sb-label">신고 현황</span><span class="sb-badge" id="sb-badge">—</span>
+    </a>
+    <a class="sb-item " href="map.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span class="sb-label">실시간 지도</span>
+    </a>
+    <a class="sb-item " href="dispatch.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      <span class="sb-label">출동 현황</span>
+    </a>
+    <div class="sb-section">분석 · 보고</div>
+    <a class="sb-item " href="stats.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sb-label">통계 분석</span>
+    </a>
+    <a class="sb-item " href="budget.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="sb-label">예산 · 비용</span>
+    </a>
+    <a class="sb-item " href="results.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+      <span class="sb-label">조치 결과 보고서</span>
+    </a>
+    <a class="sb-item " href="openhash.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span class="sb-label">오픈해시 기록</span>
+    </a>
+    <div class="sb-section">관리</div>
+    <a class="sb-item " href="resources.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="sb-label">인력 · 장비</span>
+    </a>
+    <a class="sb-item " href="settings.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="sb-label">시스템 설정</span>
+    </a>
+  </nav>
+</aside>
+
+
+
+
+
+<div class="main">
+  <header class="topbar">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="메뉴 열기">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <nav class="breadcrumb">
+      <a href="dashboard.html">FIIL.kr</a><span class="bc-sep">›</span>
+      <a href="dashboard.html">신고 현황</a><span class="bc-sep">›</span>
+      <strong id="bc-id" style="color:var(--text)">조회 중…</strong>
+    </nav>
+    <div class="topbar-right">
+      <div class="sys-ok"><div class="sys-dot"></div>시스템 정상</div>
+      <div class="clock" id="clock"></div>
+      <button class="btn btn-outline" onclick="history.back()">← 목록으로</button>
+    </div>
+  </header>
+
+  <main class="content" id="content">
+    <p style="color:var(--hint);padding:60px 0;text-align:center">보고서 불러오는 중…</p>
+  </main>
+</div>
+
+<script>
+const SB_URL = 'https://ebbecjfrwaswbdybbgiu.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViYmVjamZyd2Fzd2JkeWJiZ2l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjE5ODQsImV4cCI6MjA5NTEzNzk4NH0.H2ahQKtWdSke04Pdi3hDY86pdTx7UUKPUpQMlS_zciA';
+
+// Clock
+(function tick(){
+  const el=document.getElementById('clock');
+  if(el) el.textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  setTimeout(tick,1000);
+})();
+
+const params   = new URLSearchParams(location.search);
+const reportId = params.get('id');
+
+async function loadReport() {
+  if (!reportId) return null;
+  try {
+    const res = await fetch(
+      SB_URL+'/rest/v1/reports?id=eq.'+encodeURIComponent(reportId)+'&select=*&limit=1',
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}
+    );
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const r = data[0];
+      return {
+        id: r.id, type: r.type, typeCode: r.type_code,
+        location: r.location, gps: r.gps, reporter: r.reporter,
+        reportedAt: r.reported_at, urgency: r.urgency, status: r.status,
+        imageUrl: r.image_url,
+        analysis: r.analysis || {},
+        dispatch: r.dispatch,
+        cost: r.cost || {labor:0,equipment:0,supplies:0,other:0},
+        blockchain: r.blockchain || {txHash:'—',blockHeight:0,imageHash:'—',network:'Openhash Network'},
+      };
+    }
+  } catch(e) { console.warn('조회 오류:', e); }
+  return null;
+}
+
+function fmt(n){ return n ? Number(n).toLocaleString() : '0'; }
+
+function render(r) {
+  document.getElementById('bc-id').textContent = r.id;
+  document.title = r.id + ' — FIIL.kr';
+
+  const a   = r.analysis || {};
+  const cd  = a.cost_detail || {};
+  const wx  = a.weather     || {};
+  const urgClass  = {긴급:'chip-red',높음:'chip-orange',보통:'chip-blue',낮음:'chip-gray'};
+  const statClass = {완료:'chip-green',출동중:'chip-blue',대기중:'chip-orange',접수:'chip-gray'};
+
+  // ── 성분 테이블 ────────────────────────────────────────
+  // materials 없으면 gemini.components에서 변환
+  let materials = a.materials || [];
+  if (materials.length === 0 && a.gemini?.components) {
+    const codeMap = {
+      ST:'스티로폼', PL:'경질플라스틱', VI:'비닐', GL:'유리',
+      ME:'금속·캔', NT:'폐어구·그물', WD:'목재', EX:'기타'
+    };
+    const disposalMap = {
+      ST:'재활용', PL:'재활용', VI:'매립', GL:'재활용',
+      ME:'재활용', NT:'전문처리', WD:'매립', EX:'매립'
+    };
+    materials = Object.entries(a.gemini.components)
+      .filter(([,v]) => v.visible && v.ratio_pct > 0)
+      .map(([k,v]) => ({
+        code: k,
+        name: codeMap[k] || k,
+        pct:  v.ratio_pct,
+        weight_kg: v.weight_kg_est,
+        disposal: disposalMap[k] || '매립'
+      }));
+  }
+  // SP-15 items 변환
+  if (materials.length === 0 && a.gemini?.items) {
+    const itemMap = {
+      HA:'대형가전', SA:'소형가전', FU:'가구류', MA:'매트리스',
+      CL:'의류·섬유', KI:'주방용품', TO:'장난감', BK:'서적',
+      MX:'혼합쓰레기', HZ:'유해폐기물'
+    };
+    materials = Object.entries(a.gemini.items)
+      .filter(([,v]) => v.visible && v.ratio_pct > 0)
+      .map(([k,v]) => ({
+        code: k,
+        name: itemMap[k] || k,
+        pct:  v.ratio_pct,
+        weight_kg: v.weight_kg_est,
+        disposal: k==='HZ' ? '전문처리' : k==='HA'||k==='SA' ? '재활용' : '매립'
+      }));
+  }
+
+  const matHTML = materials.length > 0
+    ? `<div style="overflow-x:auto">
+      <table class="mat-table">
+        <thead><tr>
+          <th>성분</th><th>비율</th><th>추정 중량</th><th>처리 경로</th>
+        </tr></thead>
+        <tbody>
+          ${materials.map(m => {
+            const dClass = m.disposal === '재활용' ? 'd-recycle' : m.disposal === '전문처리' ? 'd-special' : 'd-landfill';
+            return `<tr>
+              <td><strong>${m.name||m.code||'—'}</strong></td>
+              <td>
+                <span class="mat-bar"><span class="mat-fill" style="width:${m.pct||0}%"></span></span>
+                <span style="margin-left:6px;font-weight:700;color:var(--primary)">${m.pct||0}%</span>
+              </td>
+              <td>${m.weight_kg ? m.weight_kg+'kg' : '—'}</td>
+              <td><span class="disposal-tag ${dClass}">${m.disposal||'—'}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      ${(a.recycling_kg||a.landfill_kg||a.special_kg) ? `
+      <div class="subtotal-row">
+        <div class="subtotal-chip" style="background:#f0fdf4;color:#15803d">♻️ 재활용 ${a.recycling_kg||0}kg</div>
+        <div class="subtotal-chip" style="background:#f8f9fc;color:#4a5e78">🗑 매립 ${a.landfill_kg||0}kg</div>
+        <div class="subtotal-chip" style="background:#fde8e8;color:#9b1c1c">⚠️ 전문처리 ${a.special_kg||0}kg</div>
+      </div>` : ''}
+      </div>`
+    : '<p style="color:var(--hint);font-size:14px;padding:8px 0">성분 데이터 없음 (AI 분석 대기 중)</p>';
+
+  // ── 비용 섹션 ────────────────────────────────────────
+  const hasCostDetail = cd.total > 0;
+  const costHTML = hasCostDetail ? `
+    <div class="cost-section">
+      <div class="cost-section-title">수거비</div>
+      ${cd.labor_personnel   ? `<div class="cost-row"><span class="cost-lbl">인건비</span><span>₩${fmt(cd.labor_personnel)}</span></div>` : ''}
+      ${cd.drone_transport   ? `<div class="cost-row"><span class="cost-lbl">드론 운반비</span><span>₩${fmt(cd.drone_transport)}</span></div>` : ''}
+      ${cd.vehicle           ? `<div class="cost-row"><span class="cost-lbl">차량 임차비</span><span>₩${fmt(cd.vehicle)}</span></div>` : ''}
+      ${cd.supplies          ? `<div class="cost-row"><span class="cost-lbl">소모품비</span><span>₩${fmt(cd.supplies)}</span></div>` : ''}
+      ${cd.collection_subtotal ? `<div class="cost-row" style="font-weight:600"><span class="cost-lbl">수거비 소계</span><span>₩${fmt(cd.collection_subtotal)}</span></div>` : ''}
+    </div>
+    ${cd.processing_subtotal ? `
+    <div class="cost-section">
+      <div class="cost-section-title">처리비</div>
+      ${(a.processing_items||[]).map(p=>`
+        <div class="cost-row"><span class="cost-lbl">${p.name}<span class="cost-sub">${p.note||''}</span></span><span>₩${fmt(p.amount)}</span></div>
+      `).join('')}
+      <div class="cost-row" style="font-weight:600"><span class="cost-lbl">처리비 소계</span><span>₩${fmt(cd.processing_subtotal)}</span></div>
+    </div>` : ''}
+    <div class="cost-row" style="font-size:17px;font-weight:800;padding-top:10px;margin-top:4px;border-top:2px solid var(--border)">
+      <span>합계</span><span style="color:var(--primary)">₩${fmt(cd.total)}</span>
+    </div>
+    <div style="font-size:12px;color:var(--hint);margin-top:4px;text-align:right">VAT 별도</div>
+  ` : `
+    <div class="cost-row"><span class="cost-lbl">인건비</span><span>₩${fmt(r.cost.labor)}</span></div>
+    <div class="cost-row"><span class="cost-lbl">장비·차량</span><span>₩${fmt(r.cost.equipment)}</span></div>
+    <div class="cost-row"><span class="cost-lbl">소모품·처리비</span><span>₩${fmt(r.cost.supplies)}</span></div>
+    <div class="cost-row"><span class="cost-lbl">기타</span><span>₩${fmt(r.cost.other)}</span></div>
+    <div class="cost-row"><span>합계</span><span style="color:var(--primary)">₩${fmt((r.cost.labor||0)+(r.cost.equipment||0)+(r.cost.supplies||0))}</span></div>
+  `;
+
+  // ── 타임라인 ────────────────────────────────────────
+  const tlHTML = (a.timeline||[]).length > 0
+    ? `<div class="tl">${(a.timeline||[]).map((t,i)=>`
+        <div class="tl-item">
+          <div class="tl-dot done">✓</div>
+          <div class="tl-time">${t.time||''}</div>
+          <div class="tl-desc">${t.desc||''}</div>
+        </div>`).join('')}</div>`
+    : '<p style="color:var(--hint);font-size:14px">타임라인 데이터 없음</p>';
+
+  // ── 기상 ─────────────────────────────────────────────
+  const wxHTML = wx.condition ? `
+    <div class="weather-grid">
+      <div class="wx-item"><div class="wx-icon">🌤</div><div class="wx-val">${wx.condition||'—'}</div><div class="wx-lbl">날씨</div></div>
+      <div class="wx-item"><div class="wx-icon">🌡</div><div class="wx-val">${wx.temp_c||'—'}°C</div><div class="wx-lbl">기온</div></div>
+      <div class="wx-item"><div class="wx-icon">💨</div><div class="wx-val">${wx.wind_ms||'—'}m/s</div><div class="wx-lbl">풍속</div></div>
+      <div class="wx-item"><div class="wx-icon">${wx.drone_ok?'✅':'❌'}</div><div class="wx-val">${wx.drone_ok?'가능':'불가'}</div><div class="wx-lbl">드론 가동</div></div>
+    </div>` : '<p style="color:var(--hint);font-size:14px">기상 데이터 없음</p>';
+
+  document.getElementById('content').innerHTML = `
+
+  <!-- GCS 배지 -->
+  ${a.gcs_points ? `
+  <div class="gcs-badge">
+    <div class="gcs-icon">🌿</div>
+    <div class="gcs-text">
+      <strong>GCS 포인트 적립</strong>
+      <span>성분 분석 보너스 포함 · 고팡 K-Cleaner 신고</span>
+    </div>
+    <div class="gcs-pts">+${a.gcs_points}P</div>
+  </div>` : ''}
+
+  <!-- 신고 헤더 -->
+  <div class="rh">
+    <div class="rh-top">
+      <div>
+        <div class="rh-id">${r.id}</div>
+        <div class="rh-subtitle">${r.type||'—'} &nbsp;·&nbsp; ${r.location||'—'}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-outline" onclick="window.print()">🖨 인쇄</button>
+        <button class="btn btn-outline" onclick="copyHash()">⛓ 해시 복사</button>
+        <button class="btn btn-primary" id="approve-btn" onclick="approveReport()" style="background:var(--accent-d);border-color:var(--accent-d);">✅ 승인</button>
+      </div>
+    </div>
+    <div class="rh-meta">
+      <div class="meta-f"><span class="meta-l">신고 일시</span><span class="meta-v" style="font-size:13px">${r.reportedAt ? new Date(r.reportedAt).toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) : '—'}</span></div>
+      <div class="meta-f"><span class="meta-l">GPS</span><span class="meta-v" id="gps-display" style="font-size:13px">${r.gps||'—'}</span></div>
+      <div class="meta-f"><span class="meta-l">신고자</span><span class="meta-v">${r.reporter||'—'}</span></div>
+      <div class="meta-f"><span class="meta-l">긴급도</span><span class="chip ${urgClass[r.urgency]||'chip-gray'}">${r.urgency||'—'}</span></div>
+      <div class="meta-f"><span class="meta-l">처리 상태</span><span class="chip ${statClass[r.status]||'chip-gray'}">${r.status||'접수'}</span></div>
+      ${a.terrain ? `<div class="meta-f"><span class="meta-l">지형</span><span class="meta-v" style="font-size:13px">${a.terrain}</span></div>` : ''}
+      ${a.drone !== undefined ? `<div class="meta-f"><span class="meta-l">드론</span><span class="meta-v">${a.drone?'✅ 필요':'불필요'} ${a.flights?'('+a.flights+'회)':''}</span></div>` : ''}
+      ${a.work_hours ? `<div class="meta-f"><span class="meta-l">작업 시간</span><span class="meta-v">${a.work_hours}시간</span></div>` : ''}
+    </div>
+  </div>
+
+  <!-- 사진 + AI 요약 -->
+  <div class="grid-5-7">
+    <div class="card">
+      <div class="card-head"><div class="card-title">📸 신고 사진</div></div>
+      <div class="card-body" style="padding:10px">
+        <div class="photo-box">
+          ${r.imageUrl ? `<img src="${r.imageUrl}" alt="신고 사진"><div class="photo-tag">AI 분석 완료</div>`
+                       : `<div class="photo-empty">📷<br>사진 없음</div>`}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">🤖 AI 분석 요약</div></div>
+      <div class="card-body">
+        <div class="summary-box">
+          <div class="summary-box-lbl">현장 상황</div>
+          <p>${a.summary || a.gemini?.scene_description || a.gopangAnalysis?.summary || '분석 데이터 없음'}</p>
+        </div>
+        ${(a.actions||[]).length > 0 ? `
+        <div class="summary-box" style="margin-top:8px;">
+          <div class="summary-box-lbl">권고 조치</div>
+          ${(a.actions||[]).map((ac,i)=>`<p style="margin:2px 0">${i+1}. ${ac}</p>`).join('')}
+        </div>` : ''}
+        <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+          ${a.volume||a.gemini?.total_weight_kg_est ? `<div class="meta-f"><span class="meta-l">총 추정 중량</span><span class="meta-v">${a.volume||(a.gemini?.total_weight_kg_est+'kg')||'—'}</span></div>` : ''}
+          <div class="meta-f"><span class="meta-l">유해 여부</span><span class="meta-v">${a.hazard||(a.gemini?.hazard_detected?'⚠️ 감지':'없음')||'미상'}</span></div>
+          ${a.gemini?.scale ? `<div class="meta-f"><span class="meta-l">규모</span><span class="meta-v">${a.gemini.scale}</span></div>` : ''}
+          ${a.gemini?.risk_level ? `<div class="meta-f"><span class="meta-l">위험도</span><span class="meta-v">${a.gemini.risk_level}</span></div>` : ''}
+          ${a.openhash_block_id ? `<div class="meta-f"><span class="meta-l">OpenHash 블록</span><span class="meta-v" style="font-size:12px;font-family:monospace">${a.openhash_block_id}</span></div>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 성분 분석 + 타임라인 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">🗑 폐기물 성분 분석</div></div>
+      <div class="card-body" style="padding:10px 16px">${matHTML}</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">⏱ 작업 타임라인</div></div>
+      <div class="card-body">${tlHTML}</div>
+    </div>
+  </div>
+
+  <!-- 기상 + 비용 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">🌤 현장 기상 정보</div></div>
+      <div class="card-body">${wxHTML}</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">💰 소요 예산</div></div>
+      <div class="card-body">${costHTML}</div>
+    </div>
+  </div>
+
+  <!-- 블록체인 -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">⛓ Openhash 블록체인 기록</div></div>
+    <div class="card-body" style="padding:10px">
+      <div class="chain">
+        <div class="chain-badge">● 위변조 불가 기록 완료 · ${r.blockchain.network||'Openhash Network'}</div>
+        <div class="chain-row"><span class="chain-k">TX Hash</span><span class="chain-v chain-hash" id="txhash">${r.blockchain.txHash||'—'}</span></div>
+        <div class="chain-row"><span class="chain-k">블록 높이</span><span class="chain-v">${r.blockchain.blockHeight ? '#'+Number(r.blockchain.blockHeight).toLocaleString() : '—'}</span></div>
+        <div class="chain-row"><span class="chain-k">이미지 해시</span><span class="chain-v">${r.blockchain.imageHash||'—'}</span></div>
+        <div class="chain-row"><span class="chain-k">신고 ID</span><span class="chain-v">${r.id}</span></div>
+        <div class="chain-row"><span class="chain-k">상태</span><span class="chain-v chain-ok">검증 완료</span></div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function copyHash(){
+  const el=document.getElementById('txhash');
+  if(el) navigator.clipboard.writeText(el.textContent).then(()=>alert('해시 복사 완료'));
+}
+
+// ── 승인 처리 ─────────────────────────────────────────
+async function approveReport() {
+  const btn = document.getElementById('approve-btn');
+  if (!reportId) return;
+
+  // 이미 승인된 경우 확인
+  if (btn.dataset.approved === 'true') {
+    alert('이미 승인된 신고입니다.');
+    return;
+  }
+
+  if (!confirm(`${reportId} 신고를 승인하시겠습니까?\n\n처리 비용의 70%가 비용으로,\n30%가 세전 수입으로 기록됩니다.`)) return;
+
+  btn.disabled = true;
+  btn.textContent = '승인 중…';
+
+  try {
+    // 현재 신고 데이터 조회 (비용 계산용)
+    const res = await fetch(
+      SB_URL+'/rest/v1/reports?id=eq.'+encodeURIComponent(reportId)+'&select=analysis,cost&limit=1',
+      { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY } }
+    );
+    const data = await res.json();
+    const r = data[0] || {};
+    const a = r.analysis || {};
+
+    // 총 비용 산출 (analysis.cost.total_est 또는 cost 컬럼)
+    const totalCost =
+      a.cost?.total_est ||
+      a.gemini?.cost_estimate?.total_est ||
+      (r.cost ? (r.cost.labor||0)+(r.cost.equipment||0)+(r.cost.supplies||0) : 0) ||
+      0;
+
+    const approvedCost    = Math.round(totalCost * 0.7);
+    const incomeBeforeTax = Math.round(totalCost * 0.3);
+
+    // Supabase 업데이트
+    const updateRes = await fetch(
+      SB_URL+'/rest/v1/reports?id=eq.'+encodeURIComponent(reportId),
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer '+SB_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          status:             '승인',
+          approved_at:        new Date().toISOString(),
+          approved_by:        'admin',
+          approved_cost:      approvedCost,
+          income_before_tax:  incomeBeforeTax,
+        }),
+      }
+    );
+
+    if (!updateRes.ok) throw new Error('업데이트 실패: ' + updateRes.status);
+
+    // UI 업데이트
+    btn.textContent  = '✅ 승인됨';
+    btn.style.background = 'var(--accent-d)';
+    btn.dataset.approved = 'true';
+
+    // 상태 칩 업데이트
+    const statEl = document.querySelector('.chip[class*="chip-"]');
+    if (statEl) {
+      statEl.className = 'chip chip-green';
+      statEl.textContent = '승인';
+    }
+
+    // 비용 요약 표시
+    alert(`승인 완료!\n\n처리 비용: ₩${totalCost.toLocaleString()}\n비용 (70%): ₩${approvedCost.toLocaleString()}\n세전 수입 (30%): ₩${incomeBeforeTax.toLocaleString()}`);
+
+  } catch(e) {
+    console.error('[승인 오류]', e);
+    alert('승인 처리 중 오류가 발생했습니다: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '✅ 승인';
+  }
+}
+
+// 페이지 로드 시 이미 승인된 신고면 버튼 상태 변경
+function _checkApprovalStatus(r) {
+  if (r.status === '승인') {
+    const btn = document.getElementById('approve-btn');
+    if (btn) {
+      btn.textContent     = '✅ 승인됨';
+      btn.style.background = 'var(--accent-d)';
+      btn.dataset.approved = 'true';
+    }
+  }
+}
+
+// Init
+loadReport().then(r => {
+  if (r) {
+    render(r);
+    _checkApprovalStatus(r);
+    // GPS → 카카오 역지오코딩 (Geocoder API — CORS 안전)
+    if (r.gps && window.kakao && kakao.maps && kakao.maps.services) {
+      const parts = r.gps.replace(/\s/g,'').split(',');
+      if (parts.length >= 2) {
+        const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+        new kakao.maps.services.Geocoder().coord2Address(lng, lat, (result, status) => {
+          if (status === kakao.maps.services.Status.OK && result[0]) {
+            const addr = result[0].road_address?.address_name
+                      || result[0].address?.address_name;
+            const el = document.getElementById('gps-display');
+            if (addr && el) el.textContent = addr + ' (' + r.gps + ')';
+          }
+        });
+      }
+    }
+  }
+  else {
+    document.getElementById('content').innerHTML=`
+      <div style="text-align:center;padding:80px 20px">
+        <div style="font-size:40px;margin-bottom:12px">🔍</div>
+        <h2 style="font-size:18px;margin-bottom:8px">보고서를 찾을 수 없습니다</h2>
+        <p style="color:var(--hint);margin-bottom:20px">신고 번호 <strong>${reportId||'(없음)'}</strong></p>
+        <button class="btn btn-primary" onclick="history.back()">← 목록으로</button>
+      </div>`;
+  }
+});
+</script>
+</body>
+</html>
