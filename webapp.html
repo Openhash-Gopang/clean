@@ -1099,7 +1099,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
 // ══════════════════════════════════════════════════
 const PROXY_URL = 'https://drone-proxy.tensor-city.workers.dev';
 // 혼디 본체 공유 백엔드 — 로그인한 실제 사용자 프로필(이름/전화) 조회용.
-// 2026-09-22: K-Cleaner가 자체 로그인 없이 "김제주" 더미 텍스트를 항상
+// 2026-09-22: K-Clean가 자체 로그인 없이 "김제주" 더미 텍스트를 항상
 // 보여주던 결함을 고치기 위해 추가 — GWP token(=혼디 guid)으로 조회한다.
 const HONDI_PROXY_URL = 'https://hondi-proxy.tensor-city.workers.dev';
 // 2026-09-22: 이전에 여기 있던 Supabase 프로젝트(SB_URL/SB_KEY, anon key
@@ -1581,7 +1581,7 @@ async function _openaiAnalyzeGeneral(imageFile) {
 }
 
 async function _deepseekReport(geminiJson, category, desc, gps, address, spCode) {
-  // SP-00-GEN: 범용 처리 — K-Cleaner 대신 일반 AI 비서 역할
+  // SP-00-GEN: 범용 처리 — K-Clean 대신 일반 AI 비서 역할
   const isGeneral = (!spCode || spCode === 'SP-00-GEN');
   let systemPrompt;
   const _reportMap = {
@@ -1687,7 +1687,7 @@ function _fileToBase64(file) {
   });
 }
 
-// ── K-Cleaner 현장 사진 업로드(R2, hondi-proxy 경유) ──────────────
+// ── K-Clean 현장 사진 업로드(R2, hondi-proxy 경유) ──────────────
 async function _uploadImage(file, reportId) {
   if (!file) return null;
   try {
@@ -2024,12 +2024,12 @@ async function runAIAnalysis(category) {
       },
     };
 
-    console.log('[K-Cleaner] 저장 시작:', reportId);
+    console.log('[K-Clean] 저장 시작:', reportId);
     try {
       await _saveReport(payload);
-      console.log('[K-Cleaner] 저장 완료:', reportId, '| image_url:', imageUrl);
+      console.log('[K-Clean] 저장 완료:', reportId, '| image_url:', imageUrl);
     } catch(e) {
-      console.warn('[K-Cleaner] 저장 실패:', e.message);
+      console.warn('[K-Clean] 저장 실패:', e.message);
     }
 
     setStep(5);
@@ -2055,7 +2055,7 @@ async function runAIAnalysis(category) {
       status:      '접수',
       analysis:    { summary: '분석 오류 발생', error: e.message },
     };
-    _saveReport(fallbackPayload).catch(se => console.warn('[K-Cleaner fallback 저장 실패]', se.message));
+    _saveReport(fallbackPayload).catch(se => console.warn('[K-Clean fallback 저장 실패]', se.message));
     showResult(category, reportId, null, null, gpsAddress || gps);
   }
 }
@@ -2297,7 +2297,7 @@ window.addEventListener('load', async () => {
 
     // 준비 완료 신호 (onInit 내부에서 화면 이동이 시작됨)
     gwp.ready({
-      title:       'K-Cleaner',
+      title:       'K-Clean',
       placeholder: '📷 카메라로 현장 사진을 찍어 전송하세요',
       accept:      'image/*',
       showCamera:  true,

@@ -1,6 +1,6 @@
-# K-Cleaner (clean.hondi.net)
+# K-Clean (clean.hondi.net)
 
-제주 스마트 신고 서비스 "K-Cleaner"의 혼디(hondi.net) 통합 버전입니다.
+제주 스마트 신고 서비스 "K-Clean"의 혼디(hondi.net) 통합 버전입니다.
 원본은 `nounweb/fiil` (구 `fiil.kr`)이며, 이 저장소는 그 실제 소스를
 그대로 옮기고 아래 결함을 수정한 것입니다.
 
@@ -17,7 +17,7 @@
 2. **GPS "시간 초과"** — 혼디 비서는 실제로 위치 정보를 매번 정상적으로
    전달하고 있었지만, 계약이 어긋나 있었습니다. 혼디(`engine.js`)는
    신형 계약(`facts`/`facts_enc`, `currentLocation`)만 보내고 있었는데,
-   K-Cleaner의 `gwp-sdk.js`/`initGPS()`는 구형 계약인 평문 `gps_addr`
+   K-Clean의 `gwp-sdk.js`/`initGPS()`는 구형 계약인 평문 `gps_addr`
    파라미터만 읽고 있어 매번 브라우저 GPS를 새로 요청하다 타임아웃
    났습니다. 혼디 쪽에 `gps_addr`를 하위호환으로 추가 전송하도록
    고쳐 즉시 반영되도록 했습니다 (별도 hondi 저장소 패치).

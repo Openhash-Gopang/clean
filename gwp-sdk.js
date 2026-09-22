@@ -14,7 +14,7 @@
  *       onInit({ token, context, gpsAddr, photoUrl, desc }) { ... },
  *       onInput(text, file) { ... },
  *     });
- *     gwp.ready({ title: 'K-Cleaner' });
+ *     gwp.ready({ title: 'K-Clean' });
  *     // 작업 완료 시
  *     gwp.done({ summary: '신고 완료', pdvData: { ... } });
  *   </script>
