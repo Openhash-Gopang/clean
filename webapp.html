@@ -1102,8 +1102,13 @@ const PROXY_URL = 'https://drone-proxy.tensor-city.workers.dev';
 // 2026-09-22: K-Cleaner가 자체 로그인 없이 "김제주" 더미 텍스트를 항상
 // 보여주던 결함을 고치기 위해 추가 — GWP token(=혼디 guid)으로 조회한다.
 const HONDI_PROXY_URL = 'https://hondi-proxy.tensor-city.workers.dev';
-const SB_URL    = 'https://ebbecjfrwaswbdybbgiu.supabase.co';
-const SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViYmVjamZyd2Fzd2JkeWJiZ2l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjE5ODQsImV4cCI6MjA5NTEzNzk4NH0.H2ahQKtWdSke04Pdi3hDY86pdTx7UUKPUpQMlS_zciA';
+// 2026-09-22: 이전에 여기 있던 Supabase 프로젝트(SB_URL/SB_KEY, anon key
+// 그대로 클라이언트에 하드코딩)는 완전히 제거했다 — 이 anon key(project
+// ref ebbecjfrwaswbdybbgiu)는 2026-08-12 혼디 저장소 45개 시크릿 스캔에서
+// 이미 노출 확인된 바로 그 키였다(state.js _SUPABASE_URL 주석 참고).
+// 신고 저장·조회·사진 업로드 전부 혼디 공유 백엔드(hondi-proxy)의
+// /kcleaner/* 엔드포인트로 이관했다 — 아래 _saveReport/_uploadImage/
+// _loadStatusScreen/_openReport/_handleUrlParams 참고.
 
 // Gemini Vision은 Worker를 통해서만 사용 (이미지 분석 전담)
 const GEMINI_MODEL = 'gemini-2.5-flash-lite';
@@ -1248,7 +1253,6 @@ async function _loadPrompt(key) {
   }
 }
 
-// ── Supabase 헬퍼 ─────────────────────────────────
 // ── 한국 시간(KST) ISO 문자열 반환 ────────────────
 function _nowKST() {
   // UTC+9 오프셋을 명시하여 저장
@@ -1257,20 +1261,19 @@ function _nowKST() {
   return kst.toISOString().replace('Z', '+09:00');
 }
 
-async function _sbFetch(path, method='GET', body=null) {
-  const opts = {
-    method,
-    headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : '',
-    },
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SB_URL + '/rest/v1/' + path, opts);
-  if (!res.ok) throw new Error('Supabase ' + res.status);
-  return method === 'POST' ? res.json() : res.json();
+// ── hondi-proxy /kcleaner/* 헬퍼 (구 Supabase _sbFetch 대체) ──────
+async function _kcFetch(path, method='GET', body=null) {
+  const opts = { method, headers: {} };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(`${HONDI_PROXY_URL}${path}`, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok === false) {
+    throw new Error(data.message || data.error || ('hondi-proxy ' + res.status));
+  }
+  return data;
 }
 
 // ── Gemini Vision 분석 (SP-14-IMG) ───────────────
@@ -1653,40 +1656,49 @@ async function _deepseekReport(geminiJson, category, desc, gps, address, spCode)
   }
 }
 
-// ── Supabase reports 저장 ────────────────────────
+// ── kcleaner_reports(L1 PocketBase, hondi-proxy 경유) 저장 ────────
+// payload는 기존 Supabase 스키마 이름(id/reporter 등) 그대로 넘어오므로
+// 여기서 Worker가 기대하는 필드명(report_code/user_guid)으로 맞춰준다.
 async function _saveReport(payload) {
-  const rows = await _sbFetch('reports', 'POST', payload);
-  return rows?.[0];
+  const data = await _kcFetch('/kcleaner/report', 'POST', {
+    report_code: payload.id,
+    user_guid:   payload.reporter,
+    type:        payload.type,
+    type_code:   payload.type_code,
+    location:    payload.location,
+    gps:         payload.gps,
+    reported_at: payload.reported_at,
+    urgency:     payload.urgency,
+    status:      payload.status,
+    image_url:   payload.image_url,
+    cost:        payload.cost,
+    dispatch:    payload.dispatch,
+    analysis:    payload.analysis,
+  });
+  return data.report;
 }
 
-// ── Supabase Storage 이미지 업로드 ──────────────
+function _fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',').pop());
+    reader.onerror = () => reject(reader.error || new Error('FileReader 실패'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── K-Cleaner 현장 사진 업로드(R2, hondi-proxy 경유) ──────────────
 async function _uploadImage(file, reportId) {
   if (!file) return null;
   try {
-    const _mimeExt = {'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png',
-      'image/webp':'webp','image/heic':'jpg','image/heif':'jpg','image/gif':'gif'};
-    const ext = _mimeExt[file.type] || (file.name.includes('.') ? file.name.split('.').pop() : 'jpg');
-    const path = `reports/${reportId}.${ext}`;
-    const res  = await fetch(
-      `${SB_URL}/storage/v1/object/report-images/${path}`,
-      {
-        method:  'POST',
-        headers: {
-          'apikey':        SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-          'Content-Type':  file.type || 'image/jpeg',
-          'x-upsert':      'false',
-        },
-        body: file,
-      }
-    );
-    if (!res.ok) {
-      const err = await res.text();
-      console.warn('[Storage] 업로드 실패:', res.status, err);
-      return null;
-    }
-    // 공개 URL 반환
-    return `${SB_URL}/storage/v1/object/public/report-images/${path}`;
+    const mimeType = file.type || 'image/jpeg';
+    const base64 = await _fileToBase64(file);
+    const data = await _kcFetch('/kcleaner/photo-upload', 'POST', {
+      image_base64: base64,
+      mime_type:    mimeType,
+      guid:         localStorage.getItem('gopang_token') || null,
+    });
+    return data.url || null;
   } catch(e) {
     console.warn('[Storage] 업로드 오류:', e.message);
     return null;
@@ -1957,7 +1969,7 @@ async function runAIAnalysis(category) {
     }
     setStep(5);
 
-    // 5단계: 이미지 업로드 + Supabase 저장
+    // 5단계: 이미지 업로드 + kcleaner_reports(L1 PocketBase, hondi-proxy 경유) 저장
     const reportId = 'RPT-2026-' + (Math.floor(Math.random()*9000)+1000);
     const urgencyMap = {S0:'낮음', S1:'보통', S2:'높음', S3:'긴급'};
     const now = _nowKST();
@@ -2012,12 +2024,12 @@ async function runAIAnalysis(category) {
       },
     };
 
-    console.log('[Supabase] 저장 시작:', reportId);
+    console.log('[K-Cleaner] 저장 시작:', reportId);
     try {
       await _saveReport(payload);
-      console.log('[Supabase] 저장 완료:', reportId, '| image_url:', imageUrl);
+      console.log('[K-Cleaner] 저장 완료:', reportId, '| image_url:', imageUrl);
     } catch(e) {
-      console.warn('[Supabase] 저장 실패:', e.message);
+      console.warn('[K-Cleaner] 저장 실패:', e.message);
     }
 
     setStep(5);
@@ -2028,7 +2040,7 @@ async function runAIAnalysis(category) {
 
   } catch(e) {
     console.error('[분석 오류]', e);
-    // 오류 시에도 기본 정보로 Supabase 저장
+    // 오류 시에도 기본 정보로 kcleaner_reports 저장
     const reportId = 'RPT-2026-' + (Math.floor(Math.random()*9000)+1000);
     const fallbackPayload = {
       id:          reportId,
@@ -2043,7 +2055,7 @@ async function runAIAnalysis(category) {
       status:      '접수',
       analysis:    { summary: '분석 오류 발생', error: e.message },
     };
-    _saveReport(fallbackPayload).catch(se => console.warn('[Supabase fallback 저장 실패]', se.message));
+    _saveReport(fallbackPayload).catch(se => console.warn('[K-Cleaner fallback 저장 실패]', se.message));
     showResult(category, reportId, null, null, gpsAddress || gps);
   }
 }
@@ -2115,15 +2127,15 @@ function showResult(category, reportId, gemini, report, location) {
   }
 }
 
-// ── Supabase → 내 신고 현황 화면 ─────────────────
+// ── kcleaner_reports(hondi-proxy 경유) → 내 신고 현황 화면 ────────
 async function _loadStatusScreen() {
   const body = document.querySelector('#screen-status .status-body');
   if (!body) return;
   body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">불러오는 중…</div>';
   try {
-    const rows = await _sbFetch(
-      'reports?select=id,type,location,reported_at,urgency,status&order=reported_at.desc&limit=10'
-    );
+    const guid = localStorage.getItem('gopang_token') || '';
+    const data = await _kcFetch(`/kcleaner/reports${guid ? '?guid=' + encodeURIComponent(guid) : ''}`);
+    const rows = (data.reports || []).map(r => ({ ...r, id: r.report_code }));
     if (!rows.length) {
       body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">신고 내역이 없습니다.</div>';
       return;
@@ -2165,28 +2177,28 @@ async function _loadStatusScreen() {
 
 async function _openReport(id) {
   try {
-    const rows = await _sbFetch(`reports?id=eq.${encodeURIComponent(id)}&limit=1`);
-    if (!rows[0]) return;
-    const r = rows[0];
+    const data = await _kcFetch(`/kcleaner/report/${encodeURIComponent(id)}`);
+    const r = data.report;
+    if (!r) return;
     const a = r.analysis || {};
-    showResult(r.type, r.id, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
+    showResult(r.type, r.report_code, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
     document.getElementById('resTime').textContent =
       r.reported_at ? new Date(r.reported_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
     document.getElementById('resGps').textContent = r.gps || '—';
   } catch(e) { alert('신고 데이터를 불러올 수 없습니다.'); }
 }
 
-// ── URL 파라미터 처리 (gopang.net → fiil.kr 링크) ─
+// ── URL 파라미터 처리 (gopang.net → clean.hondi.net 링크) ─
 async function _handleUrlParams() {
   const params   = new URLSearchParams(location.search);
   const reportId = params.get('id');
   if (!reportId) return false;
   try {
-    const rows = await _sbFetch(`reports?id=eq.${encodeURIComponent(reportId)}&limit=1`);
-    if (rows[0]) {
-      const r = rows[0];
+    const data = await _kcFetch(`/kcleaner/report/${encodeURIComponent(reportId)}`);
+    const r = data.report;
+    if (r) {
       const a = r.analysis || {};
-      showResult(r.type, r.id, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
+      showResult(r.type, r.report_code, a.gemini, { summary: a.summary, actions: a.actions }, r.location);
       document.getElementById('resTime').textContent =
         r.reported_at ? new Date(r.reported_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}) : '—';
       document.getElementById('resGps').textContent = r.gps || '—';
