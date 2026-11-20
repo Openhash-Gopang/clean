@@ -766,6 +766,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
       </div>
     </button>
 
+    <button class="report-cta" onclick="window.__keepMode=true;goScreen('screen-report');setMode('proposal')">
+      <div class="report-cta-icon">💡</div>
+      <div class="report-cta-text">
+        <span class="report-cta-title">제안하기</span>
+        <span class="report-cta-sub">문제가 아니어도 "이렇게 바꾸면 좋겠다"를 전합니다</span>
+      </div>
+    </button>
+
     <div class="section-heading">카테고리별 신고</div>
     <div class="scenario-grid-home">
       <button class="scenario-btn" onclick="goScreen('screen-report','응급환자')">
@@ -792,6 +800,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
         <span class="scenario-btn-icon">🚧</span>
         <span class="scenario-btn-title">도로파손</span>
         <span class="scenario-btn-tag">도로과</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','범죄범법')">
+        <span class="scenario-btn-icon">🚓</span>
+        <span class="scenario-btn-title">범법·범죄 의심</span>
+        <span class="scenario-btn-tag">경찰</span>
+      </button>
+      <button class="scenario-btn" onclick="goScreen('screen-report','매연차량')">
+        <span class="scenario-btn-icon">🚗</span>
+        <span class="scenario-btn-title">매연 차량</span>
+        <span class="scenario-btn-tag">시청 등</span>
       </button>
       <button class="scenario-btn" onclick="goScreen('screen-report','기타')">
         <span class="scenario-btn-icon">➕</span>
@@ -845,6 +863,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
       </div>
     </div>
     <div class="report-scroll">
+      <!-- 신고 / 제안 -->
+      <div class="mode-toggle" id="modeToggle" style="display:flex;gap:8px;margin:0 0 12px;">
+        <button type="button" id="modeReport" class="btn-outline" style="flex:1;font-weight:700;" onclick="setMode('report')">🚨 신고</button>
+        <button type="button" id="modeProposal" class="btn-outline" style="flex:1;" onclick="setMode('proposal')">💡 제안</button>
+      </div>
+
       <!-- Sender Info -->
       <div class="sender-info-box">
         <div class="sender-avatar">👤</div>
@@ -856,12 +880,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
       </div>
 
       <!-- Photo Upload -->
-      <div class="form-label">사진 첨부 <span>*</span></div>
+      <div class="form-label" id="photoLabel">사진·영상 첨부 <span>*</span></div>
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
         <img id="previewImg" class="upload-preview" style="display:none;">
         <div id="uploadPrompt">
           <div class="upload-zone-icon">📷</div>
-          <div class="upload-zone-text">사진을 첨부하세요</div>
+          <div class="upload-zone-text">사진 또는 영상을 첨부하세요</div>
           <div class="upload-zone-sub">탭하여 카메라 또는 갤러리 선택</div>
         </div>
         <div class="upload-overlay" id="uploadOverlay" style="display:none;">
@@ -869,7 +893,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
           <button class="upload-overlay-btn" onclick="event.stopPropagation();clearPhoto()">✕ 삭제</button>
         </div>
       </div>
-      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+      <input type="file" id="photoInput" accept="image/*,video/*" onchange="handlePhoto(this)">
 
       <!-- GPS -->
       <div class="gps-bar" id="gpsBar" onclick="requestGPS()" style="cursor:pointer;">
@@ -879,7 +903,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
       </div>
 
       <!-- Category -->
-      <div class="form-group">
+      <div class="form-group" id="categoryGroup">
         <label class="form-label">신고 유형 <span>*</span></label>
         <div class="form-select-wrap">
           <select class="form-select" id="categorySelect">
@@ -890,6 +914,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
             <option value="도로파손">🚧 도로 파손·위험</option>
             <option value="식당위생">🍽️ 식당 위생·평가</option>
             <option value="산불연기">🔥 산불·연기 발생</option>
+            <option value="범죄범법">🚓 범법 행위·범죄 의심</option>
+            <option value="매연차량">🚗 매연을 뿜는 차량</option>
             <option value="수질오염">🌊 수질 오염</option>
             <option value="소음진동">🔊 소음·진동</option>
             <option value="기타">➕ 기타 (AI 자동분류)</option>
@@ -904,7 +930,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
       </div>
 
       <button class="submit-btn" onclick="submitReport()" id="submitBtn">
-        <span>🤖</span> AI 분석 후 신고 접수
+        <span>🤖</span> <span id="submitLabel">AI 분석 후 신고 접수</span>
       </button>
     </div>
   </div>
@@ -978,6 +1004,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
         <div class="result-row"><span class="result-key">GPS</span><span class="result-val" id="resGps" style="font-family:'IBM Plex Mono',monospace;font-size:11px;">33.4996, 126.5312</span></div>
         <div class="result-row"><span class="result-key">시각</span><span class="result-val" id="resTime">—</span></div>
         <div class="result-row"><span class="result-key">유형</span><span class="result-val" id="resType">—</span></div>
+        <div class="result-row"><span class="result-key">대응 기관</span><span class="result-val" id="resResponder">—</span></div>
         <div class="result-row"><span class="result-key">긴급도</span><span class="result-val" id="resUrgency">—</span></div>
       </div>
 
@@ -1235,6 +1262,11 @@ const _promptFiles = {
   'sp17_cln': 'prompts/SP-17-CLN.txt',
   'sp18':     'prompts/SP-18-IMG.txt',
   'sp18_cln': 'prompts/SP-18-CLN.txt',
+  'sp19':     'prompts/SP-19-IMG.txt',
+  'sp19_cln': 'prompts/SP-19-CLN.txt',
+  'sp20':     'prompts/SP-20-IMG.txt',
+  'sp20_cln': 'prompts/SP-20-CLN.txt',
+  'sp21_cln': 'prompts/SP-21-CLN.txt',
 };
 async function _loadPrompt(key) {
   if (_promptCache[key]) return _promptCache[key];
@@ -1502,7 +1534,7 @@ async function _openaiRoute(imageFile, category, userText) {
 }
 
 async function _openaiAnalyze(imageFile, spCode) {
-  if (!spCode || spCode === 'SP-00-GEN') {
+  if (!spCode || spCode === 'SP-00-GEN' || spCode === 'SP-21-PRP') {
     return await _openaiAnalyzeGeneral(imageFile);
   }
   const _visionMap = {
@@ -1511,6 +1543,8 @@ async function _openaiAnalyze(imageFile, spCode) {
     'SP-16-IMG': 'sp16',
     'SP-17-IMG': 'sp17',
     'SP-18-IMG': 'sp18',
+    'SP-19-IMG': 'sp19',
+    'SP-20-IMG': 'sp20',
   };
   const promptKey = _visionMap[spCode] || 'img';
   const systemPrompt = await _loadPrompt(promptKey);
@@ -1590,6 +1624,9 @@ async function _deepseekReport(geminiJson, category, desc, gps, address, spCode)
     'SP-16-IMG': 'sp16_cln',
     'SP-17-IMG': 'sp17_cln',
     'SP-18-IMG': 'sp18_cln',
+    'SP-19-IMG': 'sp19_cln',
+    'SP-20-IMG': 'sp20_cln',
+    'SP-21-PRP': 'sp21_cln',
   };
   if (isGeneral) {
     systemPrompt = `당신은 친절한 AI 비서다. 사용자의 신고·요청을 분석하여 명확하고 실용적인 답변을 제공한다. 한국어로 답하라.`;
@@ -1602,7 +1639,14 @@ async function _deepseekReport(geminiJson, category, desc, gps, address, spCode)
     ? `\n비용산출: 수거비 ₩${(geminiJson.cost_estimate.collection_fee||0).toLocaleString()} + 처리비 ₩${(geminiJson.cost_estimate.disposal_fee||0).toLocaleString()} = 합계 ₩${(geminiJson.cost_estimate.total_est||0).toLocaleString()}\n필요차량: ${geminiJson.truck_required||'미상'} / 작업자: ${geminiJson.workers_required||'미상'}명`
     : '';
 
-  const userMsg = isGeneral
+  const isProposal = (spCode === 'SP-21-PRP');
+  const userMsg = isProposal
+    ? `[환경 제안 접수]\n` +
+      (geminiJson && geminiJson.scene_description ? `사진·영상 분석: ${geminiJson.scene_description}\n` : '') +
+      `제안 내용: ${desc || '없음'}\n` +
+      `위치: ${address||gps||'없음'}\n\n` +
+      `위 내용을 SP-21 지침에 따라 JSON으로만 출력하라.`
+    : isGeneral
     ? `[이미지 분석 결과 — SP-00-GEN 범용]\n` +
       `사진 유형: ${geminiJson.scene_type||'미상'}\n` +
       `주요 피사체: ${geminiJson.main_subject||'미상'}\n` +
@@ -1728,6 +1772,40 @@ let photoFile      = null;
 let gpsCoords      = null;
 let gpsAddress     = null;
 
+// ── 신고 / 제안 모드 ─────────────────────────────
+let reportMode = 'report';   // 'report' | 'proposal'
+function setMode(mode) {
+  reportMode = (mode === 'proposal') ? 'proposal' : 'report';
+  const p = reportMode === 'proposal';
+  const on = 'var(--accent,#2563eb)';
+  const rb = document.getElementById('modeReport'), pb = document.getElementById('modeProposal');
+  if (rb && pb) {
+    rb.style.fontWeight = p ? '400' : '700'; pb.style.fontWeight = p ? '700' : '400';
+    rb.style.borderColor = p ? '' : on;      pb.style.borderColor = p ? on : '';
+  }
+  const g = document.getElementById('categoryGroup'); if (g) g.style.display = p ? 'none' : '';
+  const t = document.querySelector('#screen-report .topbar-title'); if (t) t.textContent = p ? '제안하기' : '신고하기';
+  const sl = document.getElementById('submitLabel'); if (sl) sl.textContent = p ? 'AI 정리 후 제안 접수' : 'AI 분석 후 신고 접수';
+  const d = document.getElementById('descInput');
+  if (d) d.placeholder = p ? "제안 내용을 적어 주세요.\n예) '이 해변에 분리수거함이 있으면 좋겠어요', '쓰레기가 자꾸 버려지는 골목에 CCTV를 달면 좋겠어요'" : d.placeholder;
+  const pl = document.getElementById('photoLabel'); if (pl) pl.innerHTML = p ? '사진·영상 첨부 <span style="color:var(--muted);font-weight:400;">(선택)</span>' : '사진·영상 첨부 <span>*</span>';
+}
+
+// 대응 주체(누가 맡는가) — SP 코드 기준
+const _RESPONDER = {
+  'SP-14-IMG': '환경 비서 (처리 방안 수립·집행)',
+  'SP-15-IMG': '환경 비서 (처리 방안 수립·집행)',
+  'SP-16-IMG': '환경 비서 (처리 방안 수립·집행)',
+  'SP-17-IMG': '119',
+  'SP-18-IMG': '도로 관리 부서',
+  'SP-19-IMG': '시청 등 관련 기관',
+  'SP-20-IMG': '경찰',
+  'SP-21-PRP': '담당 부서 검토',
+  'SP-00-GEN': '담당 부서 자동 배정',
+};
+// 사진 없이 유형만 고른 경우의 기본 SP
+const _CATEGORY_SP = { '응급환자':'SP-17-IMG', '범죄범법':'SP-20-IMG', '매연차량':'SP-19-IMG' };
+
 // ── 내비게이션 ───────────────────────────────────
 function goScreen(id, category) {
   const prev = document.getElementById(currentScreen);
@@ -1738,6 +1816,7 @@ function goScreen(id, category) {
   next.classList.remove('slide-out');
   previousScreen = currentScreen;
   currentScreen = id;
+  if (id === 'screen-report') { setTimeout(() => { if (typeof setMode === 'function' && !window.__keepMode) setMode('report'); window.__keepMode = false; }, 0); }
   if (category && id === 'screen-report') {
     setTimeout(() => {
       const sel = document.getElementById('categorySelect');
@@ -1835,9 +1914,44 @@ function _startGPS() {
 function requestGPS() { _startGPS(); }
 
 // ── 사진 처리 ────────────────────────────────────
-function handlePhoto(input) {
-  const file = input.files[0];
+// 영상은 대표 장면 한 컷을 사진으로 뽑아 분석에 쓴다(원본 영상은 올리지 않음)
+function _extractVideoFrame(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata'; v.muted = true; v.playsInline = true; v.src = url;
+    const done = (fn, arg) => { URL.revokeObjectURL(url); fn(arg); };
+    v.onerror = () => done(reject, new Error('영상을 읽을 수 없습니다'));
+    v.onloadedmetadata = () => {
+      const d = isFinite(v.duration) ? v.duration : 0;
+      v.currentTime = d > 2 ? Math.min(d / 2, 30) : 0;
+    };
+    v.onseeked = () => {
+      try {
+        const w = v.videoWidth, h = v.videoHeight;
+        if (!w || !h) return done(reject, new Error('영상 크기를 알 수 없습니다'));
+        const k = Math.min(1, 1280 / Math.max(w, h));
+        const c = document.createElement('canvas');
+        c.width = Math.round(w * k); c.height = Math.round(h * k);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        c.toBlob(b => b ? done(resolve, new File([b], (file.name || 'video') + '.jpg', { type: 'image/jpeg' }))
+                        : done(reject, new Error('대표 장면을 만들지 못했습니다')), 'image/jpeg', 0.85);
+      } catch (e) { done(reject, e); }
+    };
+  });
+}
+async function handlePhoto(input) {
+  let file = input.files[0];
   if (!file) return;
+  if ((file.type || '').startsWith('video/')) {
+    try {
+      file = await _extractVideoFrame(file);
+    } catch (e) {
+      alert('영상에서 대표 장면을 뽑지 못했습니다. 사진으로 다시 올려 주세요.\n(' + e.message + ')');
+      input.value = '';
+      return;
+    }
+  }
   photoFile = file;
   const reader = new FileReader();
   reader.onload = e => {
@@ -1863,8 +1977,14 @@ function clearPhoto() {
 // ── 신고 제출 ────────────────────────────────────
 function submitReport() {
   const sel = document.getElementById('categorySelect');
+  if (reportMode === 'proposal') {
+    if (!photoFile && !(document.getElementById('descInput')?.value || '').trim()) {
+      alert('제안 내용을 적거나 사진·영상을 첨부해 주세요.');
+      return;
+    }
+  }
   if (!sel.value) sel.value = '기타';
-  const cat = sel.value;
+  const cat = (reportMode === 'proposal') ? '제안' : sel.value;
   if (!gpsCoords) {
     alert('위치 정보가 필요합니다.\n상단 GPS 바를 탭하여 위치를 허용해 주세요.');
     return;
@@ -1922,11 +2042,15 @@ async function runAIAnalysis(category) {
     setStep(2);
 
     // 2단계: SP 라우터 → 어떤 SP를 쓸지 결정
-    if (photoFile) {
+    if (reportMode === 'proposal') {
+      spCode = 'SP-21-PRP';
+      console.log('[제안] SP-21-PRP 사용 (라우팅 생략)');
+    } else if (photoFile) {
       try {
         console.log('[SP-ROUTER] 라우팅 시작...');
         const route = await _openaiRoute(photoFile, category, desc);
         spCode = route.sp_code || 'SP-14-IMG';
+        window.__lastRoute = route;
         console.log('[SP-ROUTER] 결정:', spCode, '신뢰도:', route.confidence);
         if (route.urgent) {
           appendBubble?.('ai', '🚨 응급 상황이 감지되었습니다. 즉각 대응팀이 출동합니다.');
@@ -1936,7 +2060,7 @@ async function runAIAnalysis(category) {
       }
     } else {
       console.warn('[SP-ROUTER] photoFile 없음 → 라우팅 건너뜀');
-      spCode = 'SP-00-GEN';
+      spCode = _CATEGORY_SP[category] || 'SP-00-GEN';
     }
     setStep(3);
 
@@ -1956,10 +2080,10 @@ async function runAIAnalysis(category) {
     // 4단계: DeepSeek 신고서 생성
     // geminiResult 없어도 기본 정보로 신고서 생성
     try {
-      const analysisInput = geminiResult || {
+      const analysisInput = geminiResult || (reportMode === 'proposal' ? {} : {
         scene_description: `${category} 신고. 사진 분석 불가.`,
         risk_level: 'S1',
-      };
+      });
       console.log('[DeepSeek] 신고서 생성 시작, SP:', spCode);
       reportData = await _deepseekReport(analysisInput, category, desc, gps, gpsAddress, spCode);
       console.log('[DeepSeek] 신고서 완료:', JSON.stringify(reportData).slice(0,200));
@@ -2010,6 +2134,8 @@ async function runAIAnalysis(category) {
       } : null,
       analysis: {
         sp_code:      spCode,
+        kind:         reportMode === 'proposal' ? 'proposal' : 'report',
+        responder:    reportData?.responder || _RESPONDER[spCode] || null,
         summary:      reportData?.summary || geminiResult?.scene_description || '',
         actions:      reportData?.actions || [],
         gemini:       geminiResult,
@@ -2036,7 +2162,7 @@ async function runAIAnalysis(category) {
     await new Promise(r => setTimeout(r, 600));
 
     // 결과 화면
-    showResult(category, reportId, geminiResult, reportData, gpsAddress || gps);
+    showResult(category, reportId, geminiResult, reportData, gpsAddress || gps, spCode);
 
   } catch(e) {
     console.error('[분석 오류]', e);
@@ -2056,7 +2182,7 @@ async function runAIAnalysis(category) {
       analysis:    { summary: '분석 오류 발생', error: e.message },
     };
     _saveReport(fallbackPayload).catch(se => console.warn('[K-Clean fallback 저장 실패]', se.message));
-    showResult(category, reportId, null, null, gpsAddress || gps);
+    showResult(category, reportId, null, null, gpsAddress || gps, spCode);
   }
 }
 
@@ -2070,15 +2196,22 @@ const analysisDB = {
   '산불연기':  { urgency:'🔴 최고 긴급', actions:['119 소방 즉시 출동','산림청 동시 신고','인근 주민 대피 안내','헬기 출동 검토'] },
   '수질오염':  { urgency:'🟠 높음',     actions:['수질오염 대응팀 출동','현장 수질 샘플 채취','오염원 역추적 조사','취수장 모니터링 강화'] },
   '소음진동':  { urgency:'🟢 낮음',     actions:['소음 측정팀 파견','소음 데시벨 측정','민원인 처리 결과 통보','기준 초과 시 시정명령'] },
+  '범죄범법':  { urgency:'🟠 높음',     actions:['안전한 거리를 유지하고 직접 맞서지 마세요','경찰에 사진·영상, 위치, 시각 전달','위험이 임박하면 즉시 112 전화','처리 결과는 접수번호로 조회'] },
+  '매연차량':  { urgency:'🟡 보통',     actions:['관할 시청 환경 담당 부서에 신고서 전달','차량 번호 확인 후 배출가스 점검 요청','번호판이 안 보이면 뒤쪽에서 다시 촬영','처리 결과는 접수번호로 조회'] },
+  '제안':      { urgency:'🟢 낮음',     actions:['제안서를 담당 부서에 전달','담당 부서 검토 후 결과 통보','처리 결과는 접수번호로 조회'] },
   '기타':      { urgency:'🟡 보통',     actions:['담당 부서 자동 배정','현장 점검팀 출동','처리 결과 48시간 내 통보','블록체인 기록 저장'] },
 };
 
-function showResult(category, reportId, gemini, report, location) {
+function showResult(category, reportId, gemini, report, location, spCode) {
   goScreen('screen-result');
   const db = analysisDB[category] || analysisDB['기타'];
 
   document.getElementById('resultCode').textContent = reportId || 'RPT-2026-????';
   document.getElementById('resType').textContent    = category;
+  const _isProp = (reportMode === 'proposal');
+  const _resp = report?.responder || _RESPONDER[spCode] || (_isProp ? '담당 부서 검토' : '담당 부서 자동 배정');
+  const _rr = document.getElementById('resResponder'); if (_rr) _rr.textContent = _resp;
+  const _h = document.querySelector('#screen-result .result-header h3'); if (_h) _h.textContent = _isProp ? '제안 접수 완료' : '신고 접수 완료';
   document.getElementById('resTime').textContent    = new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
   document.getElementById('resUrgency').textContent =
     gemini ? { S0:'🟢 낮음', S1:'🟡 보통', S2:'🟠 높음', S3:'🔴 긴급' }[gemini.risk_level] || db.urgency
@@ -2107,7 +2240,7 @@ function showResult(category, reportId, gemini, report, location) {
     const urgencyText = document.getElementById('resUrgency')?.textContent || '보통';
     const gpsText     = document.getElementById('resGps')?.textContent || null;
     const locText     = document.getElementById('resLoc')?.textContent || null;
-    const summary     = `${category} 신고 완료 (${reportId})`;
+    const summary     = _isProp ? `제안 접수 완료 (${reportId})` : `${category} 신고 완료 (${reportId})`;
     const howStr      = document.getElementById('photoInput')?.files?.length > 0
                         ? 'image' : 'text';
 
@@ -2119,8 +2252,8 @@ function showResult(category, reportId, gemini, report, location) {
           where: gpsText ? `GPS:${gpsText}${locText ? ' ' + locText : ''}` : locText,
           what:  summary,
           how:   howStr,
-          why:   `${category} 신고 — 담당 기관 처리 요청`,
-          data:  { reportId, category, urgency: urgencyText, location: locText, gps: gpsText },
+          why:   _isProp ? '환경 제안 — 담당 부서 검토 요청' : `${category} 신고 — 담당 기관 처리 요청`,
+          data:  { reportId, category, kind: _isProp ? 'proposal' : 'report', responder: _resp, urgency: urgencyText, location: locText, gps: gpsText },
         },
       });
     }, 3000);  // 결과 화면 3초 표시 후 고팡 복귀
